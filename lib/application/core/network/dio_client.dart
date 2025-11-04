@@ -1,11 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:smart_attendance_system/application/core/config/app_config.dart';
+import 'package:smart_attendance_system/application/core/services/local_storage_service.dart';
 
 class DioClient {
   static final DioClient _instance = DioClient._internal();
   factory DioClient() => _instance;
   DioClient._internal() {
     _dio = Dio(_baseOptions);
+    _initializeAuthToken();
     _addInterceptors();
   }
 
@@ -45,6 +47,18 @@ class DioClient {
           requestHeader: true,
         ),
       );
+    }
+  }
+
+  void _initializeAuthToken() async {
+    try {
+      final token = await LocalStorageService.getAuthToken();
+      if (token != null && token.isNotEmpty) {
+        _dio.options.headers['Authorization'] = 'Bearer $token';
+        print('Auth token initialized from storage');
+      }
+    } catch (e) {
+      print('Error initializing auth token: $e');
     }
   }
 

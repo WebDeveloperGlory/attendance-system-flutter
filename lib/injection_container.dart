@@ -1,5 +1,6 @@
 import 'package:get_it/get_it.dart';
 import 'package:smart_attendance_system/application/core/network/dio_client.dart';
+import 'package:smart_attendance_system/application/pages/auth/cubit/auth_state_cubit.dart';
 import 'package:smart_attendance_system/application/pages/auth/cubit/login_cubit.dart';
 import 'package:smart_attendance_system/data/datasources/auth_remote_datasource.dart';
 import 'package:smart_attendance_system/data/repositories/auth_repo_impl.dart';
@@ -8,22 +9,26 @@ import 'package:smart_attendance_system/domain/usecases/login_usecase.dart';
 final getIt = GetIt.instance;
 
 void init() {
-  // External
-  getIt.registerLazySingleton(() => DioClient());
+  // Cubits
+  getIt.registerFactory(() => AuthStateCubit());
+  getIt.registerFactory(() => LoginCubit(
+        loginUseCase: getIt(),
+        authStateCubit: getIt(), // Pass authStateCubit
+      ));
 
-  // Data sources
-  getIt.registerLazySingleton<RemoteDataSource>(
-    () => RemoteDataSource(dioClient: getIt()),
-  );
+  // Use cases
+  getIt.registerLazySingleton(() => LoginUseCase(getIt()));
 
   // Repositories
   getIt.registerLazySingleton<AuthRepositoryImpl>(
     () => AuthRepositoryImpl(remoteDataSource: getIt()),
   );
 
-  // Use cases
-  getIt.registerLazySingleton(() => LoginUseCase(getIt()));
+  // Data sources
+  getIt.registerLazySingleton<RemoteDataSource>(
+    () => RemoteDataSource(dioClient: getIt()),
+  );
 
-  // Cubits
-  getIt.registerFactory(() => LoginCubit(loginUseCase: getIt()));
+  // External
+  getIt.registerLazySingleton(() => DioClient());
 }

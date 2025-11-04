@@ -1,12 +1,14 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:smart_attendance_system/application/pages/auth/cubit/auth_state_cubit.dart';
 import 'package:smart_attendance_system/application/pages/auth/cubit/login_state.dart';
 import 'package:smart_attendance_system/domain/failiures/failures.dart';
 import 'package:smart_attendance_system/domain/usecases/login_usecase.dart';
 
 class LoginCubit extends Cubit<LoginState> {
   final LoginUseCase loginUseCase;
+  final AuthStateCubit authStateCubit;
 
-  LoginCubit({required this.loginUseCase}) : super(LoginInitial());
+  LoginCubit({required this.loginUseCase, required this.authStateCubit}) : super(LoginInitial());
 
   Future<void> login(String email, String password) async {
     // Basic validation
@@ -36,7 +38,9 @@ class LoginCubit extends Cubit<LoginState> {
           emit(const LoginError('An unexpected error occurred. Please try again.'));
         }
       },
-      (user) {
+      (user) async {
+        await authStateCubit.setAuthenticated(user);
+        
         final route = _getDashboardRoute(user.role);
         emit(LoginSuccess(user: user, redirectRoute: route));
       },
