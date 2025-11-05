@@ -20,13 +20,13 @@ final GlobalKey<NavigatorState> _adminShellNavigatorKey = GlobalKey<NavigatorSta
 final GlobalKey<NavigatorState> _lecturerShellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'lecturerShell');
 
 GoRouter routes(BuildContext context) {
-  final authStateCubit = context.read<AuthStateCubit>();
+  final authStateCubit = BlocProvider.of<AuthStateCubit>(context);
+  print('🚀 Router using AuthStateCubit instance: ${authStateCubit.hashCode}');
   
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/',
     observers: [GoRouterObserver()],
-    // THIS IS KEY: Router will refresh whenever auth state changes
     refreshListenable: GoRouterRefreshStream(authStateCubit.stream),
     redirect: (context, state) => _handleRedirect(context, state),
     routes: [

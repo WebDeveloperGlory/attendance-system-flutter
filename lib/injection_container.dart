@@ -9,11 +9,10 @@ import 'package:smart_attendance_system/domain/usecases/login_usecase.dart';
 final getIt = GetIt.instance;
 
 void init() {
-  // Cubits
-  getIt.registerFactory(() => AuthStateCubit());
+  getIt.registerLazySingleton(() => AuthStateCubit());
   getIt.registerFactory(() => LoginCubit(
+        authStateCubit: getIt(),
         loginUseCase: getIt(),
-        authStateCubit: getIt(), // Pass authStateCubit
       ));
 
   // Use cases
