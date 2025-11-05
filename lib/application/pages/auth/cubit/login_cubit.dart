@@ -39,9 +39,17 @@ class LoginCubit extends Cubit<LoginState> {
         }
       },
       (user) async {
+        print('🔐 Login successful, updating auth state...');
+        
+        // Update auth state and wait for it to complete
         await authStateCubit.setAuthenticated(user);
         
+        // Give the router a moment to process the state change
+        await Future.delayed(const Duration(milliseconds: 100));
+        
         final route = _getDashboardRoute(user.role);
+        print('✅ Emitting LoginSuccess with route: $route');
+        
         emit(LoginSuccess(user: user, redirectRoute: route));
       },
     );

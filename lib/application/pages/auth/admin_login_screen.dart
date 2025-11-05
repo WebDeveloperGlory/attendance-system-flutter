@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:smart_attendance_system/application/pages/auth/cubit/auth_state_cubit.dart';
 import 'package:smart_attendance_system/application/pages/auth/cubit/login_cubit.dart';
 import 'package:smart_attendance_system/application/pages/auth/cubit/login_state.dart';
 import 'package:smart_attendance_system/injection_container.dart';
@@ -78,9 +79,40 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         ),
       ),
       body: BlocListener<LoginCubit, LoginState>(
-        listener: (context, state) {
+        listener: (context, state) async {
           if (state is LoginSuccess) {
-            _navigateBasedOnRole(context, state.user.role);
+            print('📍 Login success, navigating to: ${state.redirectRoute}');
+            
+            // Show success message
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Welcome ${state.user.name}!'),
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                duration: const Duration(milliseconds: 1500),
+              ),
+            );
+            
+            // Wait for the next frame to ensure state has propagated
+            await Future.delayed(const Duration(milliseconds: 1000));
+            
+            // Verify auth state before navigation
+            final authState = context.read<AuthStateCubit>().state;
+            print('🔍 Auth state before navigation: ${authState.runtimeType}');
+            
+            if (authState is AuthStateAuthenticated) {
+              print('✅ Auth confirmed, navigating...');
+              // Navigate to dashboard
+              if (context.mounted) {
+                context.go(state.redirectRoute);
+              }
+            } else {
+              print('❌ Auth state not ready, retrying...');
+              // Retry after a bit more delay
+              await Future.delayed(const Duration(milliseconds: 1000));
+              if (context.mounted) {
+                context.go(state.redirectRoute);
+              }
+            }
           }
         },
         child: SafeArea(
@@ -405,19 +437,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       final password = _passwordController.text;
       
       context.read<LoginCubit>().login(email, password);
-    }
-  }
-
-  void _navigateBasedOnRole(BuildContext context, String role) {
-    switch (role.toLowerCase()) {
-      case 'admin':
-        context.go('/admin/dashboard');
-        break;
-      case 'lecturer':
-        context.go('/lecturer/dashboard');
-        break;
-      default:
-        context.go('/home');
     }
   }
 

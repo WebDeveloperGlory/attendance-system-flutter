@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smart_attendance_system/application/core/services/go_router_observer.dart';
+import 'package:smart_attendance_system/application/core/services/go_router_refresh_stream.dart';
 import 'package:smart_attendance_system/application/pages/admin/admin_shell.dart';
 import 'package:smart_attendance_system/application/pages/admin/dashboard/admin_dashboard_screen.dart';
 import 'package:smart_attendance_system/application/pages/admin/lecturer/admin_lecturer_management.dart';
@@ -19,15 +20,19 @@ final GlobalKey<NavigatorState> _adminShellNavigatorKey = GlobalKey<NavigatorSta
 final GlobalKey<NavigatorState> _lecturerShellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'lecturerShell');
 
 GoRouter routes(BuildContext context) {
+  final authStateCubit = context.read<AuthStateCubit>();
+  
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/',
     observers: [GoRouterObserver()],
-    redirect: (context, state) => _handleInitialRedirect(context, state),
+    // THIS IS KEY: Router will refresh whenever auth state changes
+    refreshListenable: GoRouterRefreshStream(authStateCubit.stream),
+    redirect: (context, state) => _handleRedirect(context, state),
     routes: [
       GoRoute(
         path: '/',
-        redirect: (context, state) => _handleRootRedirect(context),
+        redirect: (context, state) => '/home',
       ),
       GoRoute(
         path: '/home',
@@ -50,17 +55,14 @@ GoRouter routes(BuildContext context) {
           GoRoute(
             path: '/admin/dashboard',
             builder: (context, state) => const AdminDashboardScreen(),
-            redirect: (context, state) => _adminAuthGuard(context),
           ),
           GoRoute(
             path: '/admin/students',
             builder: (context, state) => const AdminDashboardScreen(),
-            redirect: (context, state) => _adminAuthGuard(context),
           ),
           GoRoute(
             path: '/admin/lecturers',
             builder: (context, state) => const AdminLecturerManagement(),
-            redirect: (context, state) => _adminAuthGuard(context),
           ),        
         ],
       ),
@@ -73,17 +75,14 @@ GoRouter routes(BuildContext context) {
           GoRoute(
             path: '/lecturer/dashboard',
             builder: (context, state) => const LecturerDashboardScreen(),
-            redirect: (context, state) => _lecturerAuthGuard(context),
           ),
           GoRoute(
             path: '/lecturer/create-class',
             builder: (context, state) => const LecturerDashboardScreen(),
-            redirect: (context, state) => _lecturerAuthGuard(context),
           ),
           GoRoute(
             path: '/lecturer/records',
             builder: (context, state) => const LecturerAttendanceRecordsScreen(),
-            redirect: (context, state) => _lecturerAuthGuard(context),
           ),
         ],
       ),
@@ -118,61 +117,72 @@ GoRouter routes(BuildContext context) {
   );
 }
 
-// ========== AUTH GUARD FUNCTIONS ==========
+// ========== UNIFIED REDIRECT LOGIC ==========
 
-String? _handleInitialRedirect(BuildContext context, GoRouterState state) {
-  if (state.uri.toString() == '/home' || 
-      state.uri.toString() == '/admin-login' || 
-      state.uri.toString() == '/lecturer-login' ||
-      state.uri.toString() == '/') {
+String? _handleRedirect(BuildContext context, GoRouterState state) {
+  final authState = context.read<AuthStateCubit>().state;
+  final location = state.uri.toString();
+  
+  print('🔄 Router redirect check: $location, Auth: ${authState.runtimeType}');
+  
+  // If auth is still loading, don't redirect yet
+  if (authState is AuthStateLoading) {
+    print('⏳ Auth loading, staying on current route');
     return null;
   }
   
-  return _handleRootRedirect(context);
-}
-
-String? _handleRootRedirect(BuildContext context) {
-  final authState = context.read<AuthStateCubit>().state;
+  final isAuthenticated = authState is AuthStateAuthenticated;
+  final userRole = isAuthenticated ? (authState).user.role.toLowerCase() : null;
   
-  if (authState is AuthStateAuthenticated) {
-    return _getDashboardRoute(authState.user.role);
-  } else if (authState is AuthStateUnauthenticated) {
-    return '/home';
-  }
-  
-  return null;
-}
-
-String? _adminAuthGuard(BuildContext context) {
-  final authState = context.read<AuthStateCubit>().state;
-  
-  if (authState is AuthStateAuthenticated) {
-    if (authState.user.role.toLowerCase() == 'admin') {
-      return null;
-    } else {
-      // User is logged in but not an admin, redirect to their dashboard
-      return _getDashboardRoute(authState.user.role);
+  // Public routes - accessible to everyone
+  final publicRoutes = ['/home', '/admin-login', '/lecturer-login'];
+  if (publicRoutes.contains(location)) {
+    // If authenticated user tries to access login pages, redirect to their dashboard
+    if (isAuthenticated && (location == '/admin-login' || location == '/lecturer-login')) {
+      final dashboard = _getDashboardRoute(userRole!);
+      print('✅ Authenticated user on login page, redirecting to: $dashboard');
+      return dashboard;
     }
-  } else {
-    // User is not logged in, redirect to admin login
-    return '/admin-login';
+    return null;
   }
-}
-
-String? _lecturerAuthGuard(BuildContext context) {
-  final authState = context.read<AuthStateCubit>().state;
   
-  if (authState is AuthStateAuthenticated) {
-    if (authState.user.role.toLowerCase() == 'lecturer') {
-      return null; // Allow access to lecturer routes
-    } else {
-      // User is logged in but not a lecturer, redirect to their dashboard
-      return _getDashboardRoute(authState.user.role);
+  // Protected routes - require authentication
+  if (location.startsWith('/admin/')) {
+    if (!isAuthenticated) {
+      print('❌ Not authenticated, redirecting to admin login');
+      return '/admin-login';
     }
-  } else {
-    // User is not logged in, redirect to lecturer login
-    return '/lecturer-login';
+    if (userRole != 'admin') {
+      print('❌ Wrong role for admin route, redirecting to: ${_getDashboardRoute(userRole!)}');
+      return _getDashboardRoute(userRole);
+    }
+    print('✅ Admin access granted');
+    return null;
   }
+  
+  if (location.startsWith('/lecturer/')) {
+    if (!isAuthenticated) {
+      print('❌ Not authenticated, redirecting to lecturer login');
+      return '/lecturer-login';
+    }
+    if (userRole != 'lecturer') {
+      print('❌ Wrong role for lecturer route, redirecting to: ${_getDashboardRoute(userRole!)}');
+      return _getDashboardRoute(userRole);
+    }
+    print('✅ Lecturer access granted');
+    return null;
+  }
+  
+  // For any other route, if authenticated, redirect to dashboard
+  if (isAuthenticated) {
+    final dashboard = _getDashboardRoute(userRole!);
+    print('✅ Authenticated, redirecting to dashboard: $dashboard');
+    return dashboard;
+  }
+  
+  // Default: redirect to home
+  print('🏠 Default redirect to home');
+  return '/home';
 }
 
 String _getDashboardRoute(String role) {
