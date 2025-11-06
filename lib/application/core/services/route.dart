@@ -44,7 +44,7 @@ GoRouter routes(BuildContext context) {
       ),
       GoRoute(
         path: '/lecturer-login',
-        builder: (context, state) => const LecturerLoginScreen(),
+        builder: (context, state) => const LecturerLoginScreenWrapperProvider(),
       ),
       
       // Admin Shell Routes (Protected)
