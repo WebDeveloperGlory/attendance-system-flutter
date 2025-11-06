@@ -5,9 +5,12 @@ import 'package:smart_attendance_system/application/pages/auth/cubit/auth_state_
 import 'package:smart_attendance_system/application/pages/auth/cubit/login_cubit.dart';
 import 'package:smart_attendance_system/data/datasources/admin_remote_datasource.dart';
 import 'package:smart_attendance_system/data/datasources/auth_remote_datasource.dart';
+import 'package:smart_attendance_system/data/datasources/fnd_remote_datasource.dart';
 import 'package:smart_attendance_system/data/repositories/admin_repo_impl.dart';
 import 'package:smart_attendance_system/data/repositories/auth_repo_impl.dart';
+import 'package:smart_attendance_system/data/repositories/fnd_repo_impl.dart';
 import 'package:smart_attendance_system/domain/repositories/admin_repo.dart';
+import 'package:smart_attendance_system/domain/repositories/fnd_repo.dart';
 import 'package:smart_attendance_system/domain/usecases/login_usecase.dart';
 
 final getIt = GetIt.instance;
@@ -33,6 +36,9 @@ void init() {
   getIt.registerLazySingleton<AdminRepo>(
     () => AdminRepoImpl(remoteDataSource: getIt()),
   );
+  getIt.registerLazySingleton<FndRepo>(
+    () => FndRepoImpl(remoteDataSource: getIt()),
+  );
 
   // Data sources
   getIt.registerLazySingleton<RemoteDataSource>(
@@ -40,6 +46,9 @@ void init() {
   );
   getIt.registerLazySingleton<AdminRemoteDataSource>(
     () => AdminRemoteDataSourceImpl(dioClient: getIt()),
+  );
+  getIt.registerLazySingleton<FndRemoteDataSource>(
+    () => FndRemoteDataSourceImpl(dioClient: getIt()),
   );
 
   // External

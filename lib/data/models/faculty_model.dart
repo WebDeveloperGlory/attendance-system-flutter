@@ -1,29 +1,39 @@
-import 'package:equatable/equatable.dart';
 import 'package:smart_attendance_system/domain/entities/faculty_entity.dart';
 
-class FacultyModel extends Equatable {
-  final String id;
-  final String name;
-  final String code;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
-
+class FacultyModel extends FacultyEntity {
   const FacultyModel({
-    required this.id,
-    required this.name,
-    required this.code,
-    this.createdAt,
-    this.updatedAt,
+    required super.id,
+    required super.name,
+    required super.code,
+    required super.description,
+    required super.departments,
+    required super.createdAt,
+    required super.updatedAt,
   });
 
   factory FacultyModel.fromJson(Map<String, dynamic> json) {
     return FacultyModel(
-      id: json['id']?.toString() ?? '',
-      name: json['name'] ?? '',
-      code: json['code'] ?? '',
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
+      id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      code: json['code']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      departments: List<String>.from(json['departments'] ?? []),
+      createdAt: _parseDateTime(json['createdAt']),
+      updatedAt: _parseDateTime(json['updatedAt']),
     );
+  }
+
+  static DateTime _parseDateTime(dynamic dateTime) {
+    if (dateTime == null) return DateTime.now();
+    if (dateTime is DateTime) return dateTime;
+    if (dateTime is String) {
+      try {
+        return DateTime.parse(dateTime);
+      } catch (e) {
+        return DateTime.now();
+      }
+    }
+    return DateTime.now();
   }
 
   Map<String, dynamic> toJson() {
@@ -31,21 +41,58 @@ class FacultyModel extends Equatable {
       'id': id,
       'name': name,
       'code': code,
-      'createdAt': createdAt?.toIso8601String(),
-      'updatedAt': updatedAt?.toIso8601String(),
+      'description': description,
+      'departments': departments,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
     };
   }
+}
 
-  FacultyEntity toEntity() {
-    return FacultyEntity(
-      id: id,
-      name: name,
-      code: code,
-      createdAt: createdAt,
-      updatedAt: updatedAt,
+class FacultyDetailModel extends FacultyDetailEntity {
+  const FacultyDetailModel({
+    required super.id,
+    required super.name,
+    required super.code,
+    required super.description,
+    required super.totalStudents,
+    required super.activeDepartments,
+    required super.departments,
+  });
+
+  factory FacultyDetailModel.fromJson(Map<String, dynamic> json) {
+    return FacultyDetailModel(
+      id: json['_id'] ?? '',
+      name: json['name'] ?? '',
+      code: json['code'] ?? '',
+      description: json['description'] ?? '',
+      totalStudents: json['totalStudents'] ?? 0,
+      activeDepartments: json['activeDepartments'] ?? 0,
+      departments: (json['departments'] as List? ?? [])
+          .map((dept) => DepartmentSummaryModel.fromJson(dept))
+          .toList(),
     );
   }
+}
 
-  @override
-  List<Object> get props => [id, name, code, createdAt ?? '', updatedAt ?? ''];
+class DepartmentSummaryModel extends DepartmentSummaryEntity {
+  const DepartmentSummaryModel({
+    required super.id,
+    required super.name,
+    required super.code,
+    required super.description,
+    required super.students,
+    required super.courses,
+  });
+
+  factory DepartmentSummaryModel.fromJson(Map<String, dynamic> json) {
+    return DepartmentSummaryModel(
+      id: json['_id'] ?? '',
+      name: json['name'] ?? '',
+      code: json['code'] ?? '',
+      description: json['description'] ?? '',
+      students: json['students'] ?? 0,
+      courses: json['courses'] ?? 0,
+    );
+  }
 }

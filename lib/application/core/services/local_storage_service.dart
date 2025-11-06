@@ -1,15 +1,15 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:smart_attendance_system/domain/entities/department_entity.dart';
-import 'package:smart_attendance_system/domain/entities/faculty_entity.dart';
 import 'package:smart_attendance_system/domain/entities/user_entity.dart';
+import 'package:smart_attendance_system/data/models/user_model.dart';
+import 'package:smart_attendance_system/data/models/faculty_model.dart';
+import 'package:smart_attendance_system/data/models/department_model.dart';
 
 class LocalStorageService {
   static const String _userKey = 'current_user';
   static const String _isLoggedInKey = 'is_logged_in';
   static const String _authTokenKey = 'auth_token';
 
-  // Use a singleton pattern to ensure consistent access
   static SharedPreferences? _prefs;
 
   static Future<SharedPreferences> get _instance async {
@@ -21,34 +21,43 @@ class LocalStorageService {
   static Future<void> saveUser(UserEntity user) async {
     try {
       final prefs = await _instance;
-      final userJson = {
-        'id': user.id,
-        'name': user.name,
-        'email': user.email,
-        'matricNumber': user.matricNumber,
-        'role': user.role,
-        'faculty': {
-          'id': user.faculty.id,
-          'name': user.faculty.name,
-          'code': user.faculty.code,
-          'createdAt': user.faculty.createdAt?.toIso8601String(),
-          'updatedAt': user.faculty.updatedAt?.toIso8601String(),
-        },
-        'department': {
-          'id': user.department.id,
-          'name': user.department.name,
-          'code': user.department.code,
-          'faculty': user.department.faculty,
-          'createdAt': user.department.createdAt?.toIso8601String(),
-          'updatedAt': user.department.updatedAt?.toIso8601String(),
-        },
-        'level': user.level,
-        'fingerprintHash': user.fingerprintHash,
-        'isActive': user.isActive,
-        'createdAt': user.createdAt.toIso8601String(),
-        'updatedAt': user.updatedAt.toIso8601String(),
-        'token': user.token,
-      };
+      
+      // Convert to model for consistent serialization
+      final userModel = user is UserModel 
+          ? user 
+          : UserModel(
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              matricNumber: user.matricNumber,
+              role: user.role,
+              faculty: FacultyModel(
+                id: user.faculty.id,
+                name: user.faculty.name,
+                code: user.faculty.code,
+                description: user.faculty.description,
+                departments: user.faculty.departments,
+                createdAt: user.faculty.createdAt,
+                updatedAt: user.faculty.updatedAt,
+              ),
+              department: DepartmentModel(
+                id: user.department.id,
+                name: user.department.name,
+                code: user.department.code,
+                description: user.department.description,
+                facultyId: user.department.facultyId,
+                createdAt: user.department.createdAt,
+                updatedAt: user.department.updatedAt,
+              ),
+              level: user.level,
+              fingerprintHash: user.fingerprintHash,
+              isActive: user.isActive,
+              createdAt: user.createdAt,
+              updatedAt: user.updatedAt,
+              token: user.token,
+            );
+
+      final userJson = userModel.toJson();
       
       await prefs.setString(_userKey, jsonEncode(userJson));
       await prefs.setBool(_isLoggedInKey, true);
@@ -58,9 +67,9 @@ class LocalStorageService {
         await prefs.setString(_authTokenKey, user.token!);
       }
       
-      print('User data saved successfully');
+      print('✅ User data saved successfully');
     } catch (e) {
-      print('Error saving user data: $e');
+      print('❌ Error saving user data: $e');
       rethrow;
     }
   }
@@ -71,48 +80,17 @@ class LocalStorageService {
       final prefs = await _instance;
       final userJsonString = prefs.getString(_userKey);
       
-      if (userJsonString == null) return null;
+      if (userJsonString == null) {
+        print('📭 No user data found in storage');
+        return null;
+      }
       
       final userJson = jsonDecode(userJsonString) as Map<String, dynamic>;
       
-      return UserEntity(
-        id: userJson['id'] as String,
-        name: userJson['name'] as String,
-        email: userJson['email'] as String,
-        matricNumber: userJson['matricNumber'] as String,
-        role: userJson['role'] as String,
-        faculty: FacultyEntity(
-          id: userJson['faculty']['id'] as String,
-          name: userJson['faculty']['name'] as String,
-          code: userJson['faculty']['code'] as String,
-          createdAt: userJson['faculty']['createdAt'] != null 
-              ? DateTime.parse(userJson['faculty']['createdAt'] as String)
-              : null,
-          updatedAt: userJson['faculty']['updatedAt'] != null 
-              ? DateTime.parse(userJson['faculty']['updatedAt'] as String)
-              : null,
-        ),
-        department: DepartmentEntity(
-          id: userJson['department']['id'] as String,
-          name: userJson['department']['name'] as String,
-          code: userJson['department']['code'] as String,
-          faculty: userJson['department']['faculty'] as String,
-          createdAt: userJson['department']['createdAt'] != null 
-              ? DateTime.parse(userJson['department']['createdAt'] as String)
-              : null,
-          updatedAt: userJson['department']['updatedAt'] != null 
-              ? DateTime.parse(userJson['department']['updatedAt'] as String)
-              : null,
-        ),
-        level: userJson['level'] as String,
-        fingerprintHash: userJson['fingerprintHash'] as String,
-        isActive: userJson['isActive'] as bool,
-        createdAt: DateTime.parse(userJson['createdAt'] as String),
-        updatedAt: DateTime.parse(userJson['updatedAt'] as String),
-        token: userJson['token'] as String?,
-      );
+      print('📖 Retrieved user data from storage');
+      return UserModel.fromJson(userJson);
     } catch (e) {
-      print('Error parsing user data: $e');
+      print('❌ Error parsing user data: $e');
       // Clear corrupted data
       await clearUserData();
       return null;
@@ -123,9 +101,15 @@ class LocalStorageService {
   static Future<bool> isLoggedIn() async {
     try {
       final prefs = await _instance;
-      return prefs.getBool(_isLoggedInKey) ?? false;
+      final isLoggedIn = prefs.getBool(_isLoggedInKey) ?? false;
+      final hasUserData = prefs.containsKey(_userKey);
+      final hasToken = prefs.containsKey(_authTokenKey);
+      
+      print('🔐 Login check - isLoggedIn: $isLoggedIn, hasUserData: $hasUserData, hasToken: $hasToken');
+      
+      return isLoggedIn && hasUserData && hasToken;
     } catch (e) {
-      print('Error checking login status: $e');
+      print('❌ Error checking login status: $e');
       return false;
     }
   }
@@ -134,9 +118,11 @@ class LocalStorageService {
   static Future<String?> getAuthToken() async {
     try {
       final prefs = await _instance;
-      return prefs.getString(_authTokenKey);
+      final token = prefs.getString(_authTokenKey);
+      print('🔑 Token retrieval - exists: ${token != null}');
+      return token;
     } catch (e) {
-      print('Error getting auth token: $e');
+      print('❌ Error getting auth token: $e');
       return null;
     }
   }
@@ -148,9 +134,9 @@ class LocalStorageService {
       await prefs.remove(_userKey);
       await prefs.remove(_isLoggedInKey);
       await prefs.remove(_authTokenKey);
-      print('User data cleared successfully');
+      print('🗑️ User data cleared successfully');
     } catch (e) {
-      print('Error clearing user data: $e');
+      print('❌ Error clearing user data: $e');
     }
   }
 
@@ -163,14 +149,30 @@ class LocalStorageService {
       // Also update token in user object
       final user = await getUser();
       if (user != null) {
-        final updatedUser = UserEntity(
+        final updatedUser = UserModel(
           id: user.id,
           name: user.name,
           email: user.email,
           matricNumber: user.matricNumber,
           role: user.role,
-          faculty: user.faculty,
-          department: user.department,
+          faculty: FacultyModel(
+            id: user.faculty.id,
+            name: user.faculty.name,
+            code: user.faculty.code,
+            description: user.faculty.description,
+            departments: user.faculty.departments,
+            createdAt: user.faculty.createdAt,
+            updatedAt: user.faculty.updatedAt,
+          ),
+          department: DepartmentModel(
+            id: user.department.id,
+            name: user.department.name,
+            code: user.department.code,
+            description: user.department.description,
+            facultyId: user.department.facultyId,
+            createdAt: user.department.createdAt,
+            updatedAt: user.department.updatedAt,
+          ),
           level: user.level,
           fingerprintHash: user.fingerprintHash,
           isActive: user.isActive,
@@ -180,8 +182,9 @@ class LocalStorageService {
         );
         await saveUser(updatedUser);
       }
+      print('🔄 Token updated successfully');
     } catch (e) {
-      print('Error updating token: $e');
+      print('❌ Error updating token: $e');
       rethrow;
     }
   }
@@ -193,9 +196,11 @@ class LocalStorageService {
       await prefs.setString('test_key', 'test_value');
       final value = prefs.getString('test_key');
       await prefs.remove('test_key');
-      return value == 'test_value';
+      final success = value == 'test_value';
+      print('🧪 Storage test ${success ? 'passed' : 'failed'}');
+      return success;
     } catch (e) {
-      print('Storage test failed: $e');
+      print('❌ Storage test failed: $e');
       return false;
     }
   }

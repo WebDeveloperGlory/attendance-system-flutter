@@ -3,7 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smart_attendance_system/application/pages/admin/dashboard/cubit/admin_dashboard_cubit.dart';
 import 'package:smart_attendance_system/application/pages/auth/cubit/auth_state_cubit.dart';
 import 'package:smart_attendance_system/domain/entities/admin_dashboard_entity.dart';
+import 'package:smart_attendance_system/domain/entities/department_entity.dart';
+import 'package:smart_attendance_system/domain/entities/faculty_entity.dart';
 import 'package:smart_attendance_system/domain/failiures/failures.dart';
+import 'package:smart_attendance_system/domain/repositories/fnd_repo.dart';
 import 'package:smart_attendance_system/injection_container.dart' as di;
 
 class AdminDashboardScreen extends StatelessWidget {
@@ -112,7 +115,7 @@ class _AdminDashboardView extends StatelessWidget {
                 ],
               ),
             ),
-            // Logout Button (replaced notification and search)
+            // Logout Button
             Container(
               width: 40,
               height: 40,
@@ -225,18 +228,22 @@ class _AdminDashboardView extends StatelessWidget {
       QuickActionData(
         title: "Register Student",
         icon: Icons.person_add,
+        actionType: QuickActionType.registerStudent,
       ),
       QuickActionData(
         title: "Add Lecturer",
         icon: Icons.school,
+        actionType: QuickActionType.registerLecturer,
       ),
       QuickActionData(
         title: "Create Class",
         icon: Icons.class_,
+        actionType: QuickActionType.createClass,
       ),
       QuickActionData(
         title: "Manage Faculties",
         icon: Icons.business,
+        actionType: QuickActionType.manageFaculties,
       ),
     ];
   }
@@ -434,7 +441,7 @@ class _AdminDashboardView extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
-            // TODO: Implement quick action
+            _handleQuickAction(context, action.actionType);
           },
           child: Padding(
             padding: const EdgeInsets.all(14),
@@ -466,6 +473,52 @@ class _AdminDashboardView extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _handleQuickAction(BuildContext context, QuickActionType actionType) {
+    switch (actionType) {
+      case QuickActionType.registerStudent:
+        _showRegisterStudentModal(context);
+        break;
+      case QuickActionType.registerLecturer:
+        _showRegisterLecturerModal(context);
+        break;
+      case QuickActionType.createClass:
+        // TODO: Implement create class modal
+        _showComingSoonSnackbar(context, "Create Class");
+        break;
+      case QuickActionType.manageFaculties:
+        // TODO: Implement manage faculties modal
+        _showComingSoonSnackbar(context, "Manage Faculties");
+        break;
+    }
+  }
+
+  void _showRegisterStudentModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const _RegisterStudentModal(),
+    );
+  }
+
+  void _showRegisterLecturerModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const _RegisterLecturerModal(),
+    );
+  }
+
+  void _showComingSoonSnackbar(BuildContext context, String feature) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$feature feature coming soon!'),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -518,7 +571,7 @@ class _AdminDashboardView extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      "Last 7 Days", // Updated from "This Week"
+                      "Last 7 Days",
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w600,
@@ -587,20 +640,940 @@ class _AdminDashboardView extends StatelessWidget {
       ),
     );
   }
+}
 
-  // Widget _buildUnimplementedSection(BuildContext context) {
-  //   return Container(
-  //     padding: const EdgeInsets.all(16),
-  //     child: Center(
-  //       child: Text(
-  //         "Recent Activity - Coming Soon",
-  //         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-  //           color: Theme.of(context).colorScheme.onSurfaceVariant,
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
+// Register Student Modal
+class _RegisterStudentModal extends StatefulWidget {
+  const _RegisterStudentModal();
+
+  @override
+  State<_RegisterStudentModal> createState() => _RegisterStudentModalState();
+}
+
+class _RegisterStudentModalState extends State<_RegisterStudentModal> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _matricNumberController = TextEditingController();
+  final _levelController = TextEditingController();
+  
+  FacultyEntity? _selectedFaculty;
+  DepartmentEntity? _selectedDepartment;
+  
+  bool _isLoading = false;
+  bool _loadingFaculties = true;
+  bool _loadingDepartments = false;
+  
+  List<FacultyEntity> _faculties = [];
+  List<DepartmentEntity> _departments = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFaculties();
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _matricNumberController.dispose();
+    _levelController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadFaculties() async {
+    try {
+      final result = await di.getIt<FndRepo>().getFaculties();
+      result.fold(
+        (failure) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to load faculties: ${failure.message}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+        (faculties) {
+          if (mounted) {
+            setState(() {
+              _faculties = faculties;
+              _loadingFaculties = false;
+            });
+          }
+        },
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loadingFaculties = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading faculties: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _loadDepartments(String facultyId) async {
+    if (mounted) {
+      setState(() {
+        _loadingDepartments = true;
+        _selectedDepartment = null;
+        _departments = [];
+      });
+    }
+
+    try {
+      final result = await di.getIt<FndRepo>().getDepartmentsByFaculty(facultyId);
+      result.fold(
+        (failure) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to load departments: ${failure.message}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+        (departments) {
+          if (mounted) {
+            setState(() {
+              _departments = departments;
+              _loadingDepartments = false;
+            });
+          }
+        },
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loadingDepartments = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading departments: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+      ),
+      child: SingleChildScrollView(
+        // Make modal scrollable
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Register Student',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: Icon(
+                    Icons.close,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  _buildTextField(
+                    controller: _nameController,
+                    label: 'Full Name',
+                    icon: Icons.person,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter student name';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _emailController,
+                    label: 'Email Address',
+                    icon: Icons.email,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter email address';
+                      }
+                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                        return 'Please enter a valid email';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _passwordController,
+                    label: 'Password',
+                    icon: Icons.lock,
+                    obscureText: true,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter password';
+                      }
+                      if (value.length < 6) {
+                        return 'Password must be at least 6 characters';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _matricNumberController,
+                    label: 'Matric Number',
+                    icon: Icons.numbers,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter matric number';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _levelController,
+                    label: 'Level (e.g., 100, 200)',
+                    icon: Icons.school,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter level';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFacultyDropdown(),
+                  const SizedBox(height: 16),
+                  if (_selectedFaculty != null) _buildDepartmentDropdown(),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _registerStudent,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation(Colors.white),
+                              ),
+                            )
+                          : Text(
+                              'Register Student',
+                              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 16), // Extra space for scroll
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool obscureText = false,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      obscureText: obscureText,
+      validator: validator,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.outline,
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.outline,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFacultyDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Select Faculty',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outline,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: _loadingFaculties
+              ? const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        height: 16,
+                        width: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      SizedBox(width: 12),
+                      Text('Loading faculties...'),
+                    ],
+                  ),
+                )
+              : DropdownButtonFormField<FacultyEntity>(
+                  initialValue: _selectedFaculty,
+                  items: _faculties.map((FacultyEntity faculty) {
+                    return DropdownMenuItem<FacultyEntity>(
+                      value: faculty,
+                      child: Text(faculty.name),
+                    );
+                  }).toList(),
+                  onChanged: (FacultyEntity? faculty) {
+                    setState(() {
+                      _selectedFaculty = faculty;
+                    });
+                    if (faculty != null) {
+                      _loadDepartments(faculty.id);
+                    }
+                  },
+                  validator: (value) {
+                    if (value == null) {
+                      return 'Please select a faculty';
+                    }
+                    return null;
+                  },
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDepartmentDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Select Department',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outline,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: _loadingDepartments
+              ? const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        height: 16,
+                        width: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      SizedBox(width: 12),
+                      Text('Loading departments...'),
+                    ],
+                  ),
+                )
+              : DropdownButtonFormField<DepartmentEntity>(
+                  initialValue: _selectedDepartment,
+                  items: _departments.map((DepartmentEntity department) {
+                    return DropdownMenuItem<DepartmentEntity>(
+                      value: department,
+                      child: Text(department.name),
+                    );
+                  }).toList(),
+                  onChanged: (DepartmentEntity? department) {
+                    setState(() {
+                      _selectedDepartment = department;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null) {
+                      return 'Please select a department';
+                    }
+                    return null;
+                  },
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  void _registerStudent() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        await context.read<AdminDashboardCubit>().registerStudent(
+          name: _nameController.text.trim(),
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+          facultyId: _selectedFaculty!.id,
+          departmentId: _selectedDepartment!.id,
+          level: _levelController.text.trim(),
+          matricNumber: _matricNumberController.text.trim(),
+        );
+
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Student ${_nameController.text} registered successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to register student: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    }
+  }
+}
+// Register Lecturer Modal
+class _RegisterLecturerModal extends StatefulWidget {
+  const _RegisterLecturerModal();
+
+  @override
+  State<_RegisterLecturerModal> createState() => _RegisterLecturerModalState();
+}
+
+class _RegisterLecturerModalState extends State<_RegisterLecturerModal> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  
+  FacultyEntity? _selectedFaculty;
+  DepartmentEntity? _selectedDepartment;
+  
+  bool _isLoading = false;
+  bool _loadingFaculties = true;
+  bool _loadingDepartments = false;
+  
+  List<FacultyEntity> _faculties = [];
+  List<DepartmentEntity> _departments = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFaculties();
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadFaculties() async {
+    try {
+      final result = await di.getIt<FndRepo>().getFaculties();
+      result.fold(
+        (failure) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to load faculties: ${failure.message}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+        (faculties) {
+          if (mounted) {
+            setState(() {
+              _faculties = faculties;
+              _loadingFaculties = false;
+            });
+          }
+        },
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loadingFaculties = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading faculties: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _loadDepartments(String facultyId) async {
+    if (mounted) {
+      setState(() {
+        _loadingDepartments = true;
+        _selectedDepartment = null;
+        _departments = [];
+      });
+    }
+
+    try {
+      final result = await di.getIt<FndRepo>().getDepartmentsByFaculty(facultyId);
+      result.fold(
+        (failure) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to load departments: ${failure.message}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+        (departments) {
+          if (mounted) {
+            setState(() {
+              _departments = departments;
+              _loadingDepartments = false;
+            });
+          }
+        },
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loadingDepartments = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading departments: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Register Lecturer',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: Icon(
+                    Icons.close,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  _buildTextField(
+                    controller: _nameController,
+                    label: 'Full Name',
+                    icon: Icons.person,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter lecturer name';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _emailController,
+                    label: 'Email Address',
+                    icon: Icons.email,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter email address';
+                      }
+                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                        return 'Please enter a valid email';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _passwordController,
+                    label: 'Password',
+                    icon: Icons.lock,
+                    obscureText: true,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter password';
+                      }
+                      if (value.length < 6) {
+                        return 'Password must be at least 6 characters';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFacultyDropdown(),
+                  const SizedBox(height: 16),
+                  if (_selectedFaculty != null) _buildDepartmentDropdown(),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _registerLecturer,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation(Colors.white),
+                              ),
+                            )
+                          : Text(
+                              'Register Lecturer',
+                              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 16), // Extra space for scroll
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool obscureText = false,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      obscureText: obscureText,
+      validator: validator,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.outline,
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.outline,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFacultyDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Select Faculty',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outline,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: _loadingFaculties
+              ? const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        height: 16,
+                        width: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      SizedBox(width: 12),
+                      Text('Loading faculties...'),
+                    ],
+                  ),
+                )
+              : DropdownButtonFormField<FacultyEntity>(
+                  initialValue: _selectedFaculty,
+                  items: _faculties.map((FacultyEntity faculty) {
+                    return DropdownMenuItem<FacultyEntity>(
+                      value: faculty,
+                      child: Text(faculty.name),
+                    );
+                  }).toList(),
+                  onChanged: (FacultyEntity? faculty) {
+                    setState(() {
+                      _selectedFaculty = faculty;
+                    });
+                    if (faculty != null) {
+                      _loadDepartments(faculty.id);
+                    }
+                  },
+                  validator: (value) {
+                    if (value == null) {
+                      return 'Please select a faculty';
+                    }
+                    return null;
+                  },
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDepartmentDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Select Department',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outline,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: _loadingDepartments
+              ? const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        height: 16,
+                        width: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      SizedBox(width: 12),
+                      Text('Loading departments...'),
+                    ],
+                  ),
+                )
+              : DropdownButtonFormField<DepartmentEntity>(
+                  initialValue: _selectedDepartment,
+                  items: _departments.map((DepartmentEntity department) {
+                    return DropdownMenuItem<DepartmentEntity>(
+                      value: department,
+                      child: Text(department.name),
+                    );
+                  }).toList(),
+                  onChanged: (DepartmentEntity? department) {
+                    setState(() {
+                      _selectedDepartment = department;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null) {
+                      return 'Please select a department';
+                    }
+                    return null;
+                  },
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+void _registerLecturer() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        await context.read<AdminDashboardCubit>().registerLecturer(
+          name: _nameController.text.trim(),
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+          facultyId: _selectedFaculty!.id,
+          departmentId: _selectedDepartment!.id,
+        );
+
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Lecturer ${_nameController.text} registered successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to register lecturer: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    }
+  }
 }
 
 class _LoadingIndicator extends StatelessWidget {
@@ -678,12 +1651,21 @@ class StatCardData {
   });
 }
 
+enum QuickActionType {
+  registerStudent,
+  registerLecturer,
+  createClass,
+  manageFaculties,
+}
+
 class QuickActionData {
   final String title;
   final IconData icon;
+  final QuickActionType actionType;
 
   QuickActionData({
     required this.title,
     required this.icon,
+    required this.actionType,
   });
 }

@@ -24,7 +24,7 @@ class AuthRepositoryImpl implements AuthRepo {
         final profileResponse = await remoteDataSource.getProfile();
 
         if (profileResponse.isSuccess && profileResponse.data != null) {
-          return Right(profileResponse.toEntity());
+          return Right(profileResponse.data!);
         } else {
           return Left(ServerFailure(profileResponse.message));
         }
@@ -44,7 +44,7 @@ class AuthRepositoryImpl implements AuthRepo {
       final profileResponse = await remoteDataSource.getProfile();
 
       if (profileResponse.isSuccess && profileResponse.data != null) {
-        return Right(profileResponse.toEntity());
+        return Right(profileResponse.data!);
       } else {
         return Left(ServerFailure(profileResponse.message));
       }

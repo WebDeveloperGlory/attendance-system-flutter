@@ -1,34 +1,39 @@
-// lib/data/models/department_model.dart
-import 'package:equatable/equatable.dart';
 import 'package:smart_attendance_system/domain/entities/department_entity.dart';
 
-/// Handles JSON serialization/deserialization for Department
-class DepartmentModel extends Equatable {
-  final String id;
-  final String name;
-  final String code;
-  final String faculty;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
-
+class DepartmentModel extends DepartmentEntity {
   const DepartmentModel({
-    required this.id,
-    required this.name,
-    required this.code,
-    required this.faculty,
-    this.createdAt,
-    this.updatedAt,
+    required super.id,
+    required super.name,
+    required super.code,
+    required super.description,
+    required super.facultyId,
+    required super.createdAt,
+    required super.updatedAt,
   });
 
   factory DepartmentModel.fromJson(Map<String, dynamic> json) {
     return DepartmentModel(
-      id: json['id']?.toString() ?? '',
-      name: json['name'] ?? '',
-      code: json['code'] ?? '',
-      faculty: json['faculty'] ?? '',
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
+      id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      code: json['code']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      facultyId: json['faculty']?.toString() ?? json['facultyId']?.toString() ?? '',
+      createdAt: _parseDateTime(json['createdAt']),
+      updatedAt: _parseDateTime(json['updatedAt']),
     );
+  }
+
+  static DateTime _parseDateTime(dynamic dateTime) {
+    if (dateTime == null) return DateTime.now();
+    if (dateTime is DateTime) return dateTime;
+    if (dateTime is String) {
+      try {
+        return DateTime.parse(dateTime);
+      } catch (e) {
+        return DateTime.now();
+      }
+    }
+    return DateTime.now();
   }
 
   Map<String, dynamic> toJson() {
@@ -36,23 +41,10 @@ class DepartmentModel extends Equatable {
       'id': id,
       'name': name,
       'code': code,
-      'faculty': faculty,
-      'createdAt': createdAt?.toIso8601String(),
-      'updatedAt': updatedAt?.toIso8601String(),
+      'description': description,
+      'facultyId': facultyId,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
     };
   }
-
-  DepartmentEntity toEntity() {
-    return DepartmentEntity(
-      id: id,
-      name: name,
-      code: code,
-      faculty: faculty,
-      createdAt: createdAt,
-      updatedAt: updatedAt,
-    );
-  }
-
-  @override
-  List<Object> get props => [id, name, code, faculty, createdAt ?? '', updatedAt ?? ''];
 }

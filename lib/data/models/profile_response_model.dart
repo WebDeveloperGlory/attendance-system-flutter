@@ -24,8 +24,9 @@ class ProfileResponseModel extends Equatable {
 
   bool get isSuccess => code == AppConfig.successCode;
 
-  UserEntity toEntity() {
-    return data!.toEntity();
+  // Since UserModel extends UserEntity, we can return data directly
+  UserEntity? toEntity() {
+    return data; // UserModel IS a UserEntity
   }
 
   @override
