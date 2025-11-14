@@ -5,6 +5,8 @@ class AppConfig {
   static const String authEndpoint = '/auth';
   static const String adminEndpoint = '/admin';
   static const String fndEndpoint = '/fnd';
+  static const String courseEndpoint = '/course';
+  static const String lecturerEndpoint = '/lecturer';
   // End of Base URL //
 
   // Auth Endpoints //
@@ -18,6 +20,7 @@ class AppConfig {
   static const String lecturerRegistrationEndpoint = '$adminEndpoint/register/lecturer';
   static const String studentRegistrationEndpoint = '$adminEndpoint/register/student';
   static const String fingerprintRegistrationEndpoint = '$adminEndpoint/register/student/fingerprint';
+  static const String lecturerPasswordResetEndpoint = '$adminEndpoint/password/reset/lecturer';
   // End of Admin Endpoints //
   
   // Faculty and Department Endpoints //
@@ -33,6 +36,16 @@ class AppConfig {
   static String editDepartmentEndpoint(String id) => '$fndEndpoint/edit/department/$id';
   static String deleteDepartmentEndpoint(String id) => '$fndEndpoint/delete/department/$id';
   // End of Faculty and Department Endpoints //
+  
+  // Course Endpoints //
+  static const String createCourseEndpoint = courseEndpoint;
+  static String registerStudentsToCourseEndpoint(String id) => '$courseEndpoint/$id/register/students';
+  // End of Course Endpoints //
+  
+  // Lecturer Endpoints //
+  static const String getLecturersEndpoint = lecturerEndpoint;
+  static String deleteLecturerEndpoint(String id) => '$lecturerEndpoint/$id';
+  // End of Lecturer Endpoints //
 
   // Network Settings //
   static const int connectTimeout = 30000;
