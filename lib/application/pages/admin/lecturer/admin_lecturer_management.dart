@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smart_attendance_system/application/pages/admin/lecturer/cubit/lecturer_management_cubit.dart';
-// import 'package:smart_attendance_system/domain/entities/department_entity.dart';
-// import 'package:smart_attendance_system/domain/entities/faculty_entity.dart';
 import 'package:smart_attendance_system/domain/entities/lecturer_entity.dart';
+import 'package:smart_attendance_system/domain/repositories/admin_repo.dart';
 import 'package:smart_attendance_system/injection_container.dart' as di;
 
 class AdminLecturerManagement extends StatelessWidget {
@@ -564,10 +563,10 @@ class _AdminLecturerManagementViewState extends State<AdminLecturerManagementVie
   void _showAddLecturerDialog(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final cubit = context.read<LecturerManagementCubit>();
 
     final nameController = TextEditingController();
     final emailController = TextEditingController();
+    final passwordController = TextEditingController();
     String? selectedFaculty;
     String? selectedDepartment;
 
@@ -658,47 +657,29 @@ class _AdminLecturerManagementViewState extends State<AdminLecturerManagementVie
                           controller: emailController,
                         ),
                         const SizedBox(height: 16),
-                        // Faculty Dropdown
-                        _buildDropdown(
+                        // Password Field
+                        _buildPasswordField(
                           context,
-                          label: "Faculty",
-                          hint: "Select faculty",
-                          value: selectedFaculty,
-                          items: cubit.faculties
-                              .map((f) => DropdownMenuItem(
-                                    value: f.id,
-                                    child: Text(f.name),
-                                  ))
-                              .toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              selectedFaculty = value;
-                              selectedDepartment = null;
-                            });
-                          },
+                          label: "Password",
+                          hint: "Enter password",
+                          controller: passwordController,
                         ),
                         const SizedBox(height: 16),
+                        // Faculty Dropdown
+                        _buildFacultyDropdown(context, selectedFaculty, (value) {
+                          setState(() {
+                            selectedFaculty = value;
+                            selectedDepartment = null;
+                          });
+                        }),
+                        const SizedBox(height: 16),
                         // Department Dropdown
-                        _buildDropdown(
-                          context,
-                          label: "Department",
-                          hint: "Select department",
-                          value: selectedDepartment,
-                          items: selectedFaculty != null
-                              ? cubit
-                                  .getDepartmentsByFacultyId(selectedFaculty!)
-                                  .map((d) => DropdownMenuItem(
-                                        value: d.id,
-                                        child: Text(d.name),
-                                      ))
-                                  .toList()
-                              : [],
-                          onChanged: (value) {
+                        if (selectedFaculty != null)
+                          _buildDepartmentDropdown(context, selectedFaculty!, selectedDepartment, (value) {
                             setState(() {
-                              selectedDepartment = value as String?;
+                              selectedDepartment = value;
                             });
-                          },
-                        ),
+                          }),
                         const SizedBox(height: 20),
                         // Action Buttons
                         Row(
@@ -721,30 +702,74 @@ class _AdminLecturerManagementViewState extends State<AdminLecturerManagementVie
                             const SizedBox(width: 12),
                             Expanded(
                               child: ElevatedButton(
-                                onPressed: () {
-                                  if (nameController.text.isEmpty ||
-                                      emailController.text.isEmpty ||
-                                      selectedFaculty == null ||
-                                      selectedDepartment == null) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: const Text("Please fill all fields"),
-                                        backgroundColor: colorScheme.error,
-                                        behavior: SnackBarBehavior.floating,
-                                      ),
-                                    );
-                                    return;
-                                  }
+onPressed: () async {
+  if (nameController.text.isEmpty ||
+      emailController.text.isEmpty ||
+      passwordController.text.isEmpty ||
+      selectedFaculty == null ||
+      selectedDepartment == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text("Please fill all fields"),
+        backgroundColor: colorScheme.error,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+    return;
+  }
 
-                                  Navigator.pop(bottomSheetContext);
-                                  // context.read<LecturerManagementCubit>().registerLecturer(
-                                  //       name: nameController.text,
-                                  //       email: emailController.text,
-                                  //       facultyId: selectedFaculty!,
-                                  //       departmentId: selectedDepartment!,
-                                  //     );
-                                },
-                                style: ElevatedButton.styleFrom(
+  if (passwordController.text.length < 6) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text("Password must be at least 6 characters"),
+        backgroundColor: colorScheme.error,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+    return;
+  }
+
+  Navigator.pop(bottomSheetContext);
+  
+  try {
+    final adminRepo = di.getIt<AdminRepo>();
+    final result = await adminRepo.registerLecturer(
+      name: nameController.text,
+      email: emailController.text,
+      password: passwordController.text,
+      facultyId: selectedFaculty!,
+      departmentId: selectedDepartment!,
+    );
+
+    result.fold(
+      (failure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to register lecturer: ${failure.message}'),
+            backgroundColor: colorScheme.error,
+          ),
+        );
+      },
+      (success) {
+        // Reload the lecturers list
+        context.read<LecturerManagementCubit>().loadLecturers();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lecturer ${nameController.text} registered successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      },
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error: $e'),
+        backgroundColor: colorScheme.error,
+      ),
+    );
+  }
+},                                  style: ElevatedButton.styleFrom(
                                   backgroundColor: colorScheme.primary,
                                   foregroundColor: colorScheme.onPrimary,
                                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1433,6 +1458,179 @@ class _AdminLecturerManagementViewState extends State<AdminLecturerManagementVie
             ),
             style: textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurface,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPasswordField(
+    BuildContext context, {
+    required String label,
+    required String hint,
+    required TextEditingController controller,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          height: 44,
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: colorScheme.outline.withValues(alpha: 0.3),
+            ),
+          ),
+          child: TextField(
+            controller: controller,
+            obscureText: true,
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+            style: textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurface,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFacultyDropdown(
+    BuildContext context,
+    String? selectedFaculty,
+    void Function(String?) onChanged,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final cubit = context.read<LecturerManagementCubit>();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Faculty",
+          style: textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          height: 44,
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: colorScheme.outline.withValues(alpha: 0.3),
+            ),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: selectedFaculty,
+              hint: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text(
+                  "Select faculty",
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              isExpanded: true,
+              items: cubit.faculties
+                  .map((f) => DropdownMenuItem(
+                        value: f.id,
+                        child: Text(f.name),
+                      ))
+                  .toList(),
+              onChanged: onChanged,
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurface,
+              ),
+              dropdownColor: colorScheme.surface,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDepartmentDropdown(
+    BuildContext context,
+    String facultyId,
+    String? selectedDepartment,
+    void Function(String?) onChanged,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final cubit = context.read<LecturerManagementCubit>();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Department",
+          style: textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          height: 44,
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: colorScheme.outline.withValues(alpha: 0.3),
+            ),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: selectedDepartment,
+              hint: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text(
+                  "Select department",
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              isExpanded: true,
+              items: cubit
+                  .getDepartmentsByFacultyId(facultyId)
+                  .map((d) => DropdownMenuItem(
+                        value: d.id,
+                        child: Text(d.name),
+                      ))
+                  .toList(),
+              onChanged: onChanged,
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurface,
+              ),
+              dropdownColor: colorScheme.surface,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
             ),
           ),
         ),

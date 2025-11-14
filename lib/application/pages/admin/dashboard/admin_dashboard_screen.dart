@@ -175,23 +175,28 @@ class _AdminDashboardView extends StatelessWidget {
           _buildAttendanceOverview(context, dashboard.attendanceRecords),
 
           const SizedBox(height: 20),
-
-          // _buildUnimplementedSection(context),
         ],
       ),
     );
   }
 
   List<StatCardData> _buildStatsFromDashboard(AdminDashboardEntity dashboard) {
+    // Calculate percentages safely
+    final studentPercentage = dashboard.totalStudents > 0 
+        ? ((dashboard.totalActiveStudents / dashboard.totalStudents) * 100).toStringAsFixed(0)
+        : "0";
+    
+    final lecturerPercentage = dashboard.totalLecturers > 0
+        ? ((dashboard.totalActiveLecturers / dashboard.totalLecturers) * 100).toStringAsFixed(0)
+        : "0";
+    
     final overallAttendancePercent = (dashboard.overallAttendance * 100).toStringAsFixed(1);
     
     return [
       StatCardData(
         title: "Total Students",
         value: "${dashboard.totalStudents}",
-        change: dashboard.totalStudents > 0 
-            ? "+${((dashboard.totalActiveStudents / dashboard.totalStudents) * 100).toStringAsFixed(0)}%"
-            : "0%",
+        change: "+$studentPercentage%",
         active: dashboard.totalActiveStudents,
         inactive: dashboard.totalStudents - dashboard.totalActiveStudents,
         icon: Icons.people,
@@ -199,9 +204,7 @@ class _AdminDashboardView extends StatelessWidget {
       StatCardData(
         title: "Total Lecturers",
         value: "${dashboard.totalLecturers}",
-        change: dashboard.totalLecturers > 0
-            ? "+${((dashboard.totalActiveLecturers / dashboard.totalLecturers) * 100).toStringAsFixed(0)}%"
-            : "0%",
+        change: "+$lecturerPercentage%",
         active: dashboard.totalActiveLecturers,
         inactive: dashboard.totalLecturers - dashboard.totalActiveLecturers,
         icon: Icons.school,
@@ -486,34 +489,40 @@ class _AdminDashboardView extends StatelessWidget {
         _showRegisterLecturerModal(context);
         break;
       case QuickActionType.createClass:
-        // TODO: Implement create class modal
         _showComingSoonSnackbar(context, "Create Class");
         break;
       case QuickActionType.manageFaculties:
-        // TODO: Implement manage faculties modal
         _showComingSoonSnackbar(context, "Manage Faculties");
         break;
     }
   }
 
   void _showRegisterStudentModal(BuildContext context) {
+    final cubit = context.read<AdminDashboardCubit>();
+    
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => const _RegisterStudentModal(),
+      builder: (context) => _RegisterStudentModal(
+        onRegisterStudent: cubit.registerStudent,
+      ),
     );
   }
 
   void _showRegisterLecturerModal(BuildContext context) {
+    final cubit = context.read<AdminDashboardCubit>();
+    
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => const _RegisterLecturerModal(),
+      builder: (context) => _RegisterLecturerModal(
+        onRegisterLecturer: cubit.registerLecturer,
+      ),
     );
   }
-
+  
   void _showComingSoonSnackbar(BuildContext context, String feature) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -644,7 +653,17 @@ class _AdminDashboardView extends StatelessWidget {
 
 // Register Student Modal
 class _RegisterStudentModal extends StatefulWidget {
-  const _RegisterStudentModal();
+  final Future<void> Function({
+    required String name,
+    required String email,
+    required String password,
+    required String facultyId,
+    required String departmentId,
+    required String level,
+    required String matricNumber,
+  }) onRegisterStudent;
+
+  const _RegisterStudentModal({required this.onRegisterStudent});
 
   @override
   State<_RegisterStudentModal> createState() => _RegisterStudentModalState();
@@ -1086,7 +1105,7 @@ class _RegisterStudentModalState extends State<_RegisterStudentModal> {
       });
 
       try {
-        await context.read<AdminDashboardCubit>().registerStudent(
+        await widget.onRegisterStudent(
           name: _nameController.text.trim(),
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
@@ -1126,7 +1145,15 @@ class _RegisterStudentModalState extends State<_RegisterStudentModal> {
 }
 // Register Lecturer Modal
 class _RegisterLecturerModal extends StatefulWidget {
-  const _RegisterLecturerModal();
+  final Future<void> Function({
+    required String name,
+    required String email,
+    required String password,
+    required String facultyId,
+    required String departmentId,
+  }) onRegisterLecturer;
+
+  const _RegisterLecturerModal({required this.onRegisterLecturer});
 
   @override
   State<_RegisterLecturerModal> createState() => _RegisterLecturerModalState();
@@ -1539,7 +1566,7 @@ void _registerLecturer() async {
       });
 
       try {
-        await context.read<AdminDashboardCubit>().registerLecturer(
+        await widget.onRegisterLecturer(
           name: _nameController.text.trim(),
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
