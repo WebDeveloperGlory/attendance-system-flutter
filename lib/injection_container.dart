@@ -2,6 +2,8 @@ import 'package:get_it/get_it.dart';
 import 'package:smart_attendance_system/application/core/network/dio_client.dart';
 import 'package:smart_attendance_system/application/pages/admin/dashboard/cubit/admin_dashboard_cubit.dart';
 import 'package:smart_attendance_system/application/pages/admin/lecturer/cubit/lecturer_management_cubit.dart';
+import 'package:smart_attendance_system/application/pages/admin/faculty/cubit/faculty_management_cubit.dart';
+import 'package:smart_attendance_system/application/pages/admin/faculty/id/cubit/faculty_details_cubit.dart';
 import 'package:smart_attendance_system/application/pages/auth/cubit/auth_state_cubit.dart';
 import 'package:smart_attendance_system/application/pages/auth/cubit/login_cubit.dart';
 import 'package:smart_attendance_system/data/datasources/admin_remote_datasource.dart';
@@ -32,6 +34,12 @@ void init() {
   getIt.registerFactory(() => LecturerManagementCubit(
         lecturerRepository: getIt(),
         fndRepository: getIt(),
+      ));
+  getIt.registerFactory(() => FacultyManagementCubit(
+        fndRepo: getIt(),
+      ));
+  getIt.registerFactory(() => FacultyDetailsCubit(
+        fndRepo: getIt(),
       ));
 
   // Use cases

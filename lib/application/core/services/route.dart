@@ -6,6 +6,8 @@ import 'package:smart_attendance_system/application/core/services/go_router_obse
 import 'package:smart_attendance_system/application/core/services/go_router_refresh_stream.dart';
 import 'package:smart_attendance_system/application/pages/admin/admin_shell.dart';
 import 'package:smart_attendance_system/application/pages/admin/dashboard/admin_dashboard_screen.dart';
+import 'package:smart_attendance_system/application/pages/admin/faculty/admin_faculty_management_screen.dart';
+import 'package:smart_attendance_system/application/pages/admin/faculty/id/admin_faculty_details_screen.dart';
 import 'package:smart_attendance_system/application/pages/admin/lecturer/admin_lecturer_management.dart';
 import 'package:smart_attendance_system/application/pages/auth/admin_login_screen.dart';
 import 'package:smart_attendance_system/application/pages/auth/cubit/auth_state_cubit.dart';
@@ -64,6 +66,16 @@ GoRouter routes(BuildContext context) {
             path: '/admin/lecturers',
             builder: (context, state) => const AdminLecturerManagement(),
           ),        
+          GoRoute(
+            path: '/admin/faculty',
+            builder: (context, state) => const AdminFacultyManagementScreen(),
+          ),
+          GoRoute(
+            path: '/admin/faculty/:facultyId',
+            builder: (context, state) => AdminFacultyDetailsScreen(
+              facultyId: state.pathParameters['facultyId']!,
+            ),
+          ),
         ],
       ),
       

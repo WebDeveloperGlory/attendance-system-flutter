@@ -7,6 +7,8 @@ class AppConfig {
   static const String fndEndpoint = '/fnd';
   static const String courseEndpoint = '/course';
   static const String lecturerEndpoint = '/lecturer';
+  static const String classEndpoint = '/class';
+  static const String attendanceEndpoint = '/attendance';
   // End of Base URL //
 
   // Auth Endpoints //
@@ -39,13 +41,31 @@ class AppConfig {
   
   // Course Endpoints //
   static const String createCourseEndpoint = courseEndpoint;
+  static String getCourseDetailsEndpoint(String id) => '$courseEndpoint/$id';
   static String registerStudentsToCourseEndpoint(String id) => '$courseEndpoint/$id/register/students';
   // End of Course Endpoints //
   
   // Lecturer Endpoints //
   static const String getLecturersEndpoint = lecturerEndpoint;
+  static const String getLecturerDashboardEndpoint = '$lecturerEndpoint/dashboard';
+  static const String getAttendanceRecordsSummaryEndpoint = '$lecturerEndpoint/attendance/records';
   static String deleteLecturerEndpoint(String id) => '$lecturerEndpoint/$id';
   // End of Lecturer Endpoints //
+
+  // Class Endpoints //
+  static const String createClassEndpoint = classEndpoint;
+  static String getClassEndpoint(String id) => '$classEndpoint/$id';
+  static String editClassEndpoint(String id) => '$classEndpoint/$id';
+  static String deleteClassEndpoint(String id) => '$classEndpoint/$id';
+  static String addStudentToClassEndpoint(String id) => '$classEndpoint/$id/student/add';
+  // End of Class Endpoints //
+
+  // Attendance Endpoints //
+  static const String getClassAttendanceEndpoint = '$attendanceEndpoint/class/attendance';
+  static const String updateAttendanceStatusEndpoint = '$attendanceEndpoint/attendance/status';
+  static const String getAttendanceRecordsForAllStudentsEndpoint = '$attendanceEndpoint/course/attendance/all';
+  static const String getStudentCourseAttendanceEndpoint = '$attendanceEndpoint/course/attendance/student';
+  // End of Attendance Endpoints //
 
   // Network Settings //
   static const int connectTimeout = 30000;

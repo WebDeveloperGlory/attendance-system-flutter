@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:smart_attendance_system/application/pages/admin/dashboard/cubit/admin_dashboard_cubit.dart';
 import 'package:smart_attendance_system/application/pages/auth/cubit/auth_state_cubit.dart';
 import 'package:smart_attendance_system/domain/entities/admin_dashboard_entity.dart';
@@ -492,7 +493,8 @@ class _AdminDashboardView extends StatelessWidget {
         _showComingSoonSnackbar(context, "Create Class");
         break;
       case QuickActionType.manageFaculties:
-        _showComingSoonSnackbar(context, "Manage Faculties");
+        context.push('/admin/faculty');
+        // _showComingSoonSnackbar(context, "Manage Faculties");
         break;
     }
   }

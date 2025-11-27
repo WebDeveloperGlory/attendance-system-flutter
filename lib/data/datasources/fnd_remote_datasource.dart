@@ -8,8 +8,15 @@ import 'package:smart_attendance_system/domain/entities/faculty_entity.dart';
 abstract class FndRemoteDataSource {
   Future<List<FacultyEntity>> getFaculties();
   Future<FacultyDetailEntity> getFaculty(String id);
+  Future<FacultyEntity> createFaculty(Map<String, dynamic> facultyData);
+  Future<FacultyEntity> updateFaculty(String id, Map<String, dynamic> facultyData);
+  Future<void> deleteFaculty(String id);
+  
   Future<List<DepartmentEntity>> getDepartments();
   Future<List<DepartmentEntity>> getDepartmentsByFaculty(String facultyId);
+  Future<DepartmentEntity> createDepartment(Map<String, dynamic> departmentData);
+  Future<DepartmentEntity> updateDepartment(String id, Map<String, dynamic> departmentData);
+  Future<void> deleteDepartment(String id);
 }
 
 class FndRemoteDataSourceImpl implements FndRemoteDataSource {
@@ -46,6 +53,45 @@ class FndRemoteDataSourceImpl implements FndRemoteDataSource {
   }
 
   @override
+  Future<FacultyEntity> createFaculty(Map<String, dynamic> facultyData) async {
+    final response = await dioClient.dio.post(
+      AppConfig.createFacultyEndpoint,
+      data: facultyData,
+    );
+
+    if (response.data['code'] == AppConfig.successCode) {
+      return FacultyModel.fromJson(response.data['data']);
+    } else {
+      throw Exception(response.data['message'] ?? 'Failed to create faculty');
+    }
+  }
+
+  @override
+  Future<FacultyEntity> updateFaculty(String id, Map<String, dynamic> facultyData) async {
+    final response = await dioClient.dio.put(
+      AppConfig.editFacultyEndpoint(id),
+      data: facultyData,
+    );
+
+    if (response.data['code'] == AppConfig.successCode) {
+      return FacultyModel.fromJson(response.data['data']);
+    } else {
+      throw Exception(response.data['message'] ?? 'Failed to update faculty');
+    }
+  }
+
+  @override
+  Future<void> deleteFaculty(String id) async {
+    final response = await dioClient.dio.delete(
+      AppConfig.deleteFacultyEndpoint(id),
+    );
+
+    if (response.data['code'] != AppConfig.successCode) {
+      throw Exception(response.data['message'] ?? 'Failed to delete faculty');
+    }
+  }
+
+  @override
   Future<List<DepartmentEntity>> getDepartments() async {
     final response = await dioClient.dio.get(
       AppConfig.getDepartmentEndpoint,
@@ -61,9 +107,7 @@ class FndRemoteDataSourceImpl implements FndRemoteDataSource {
   }
 
   @override
-  Future<List<DepartmentEntity>> getDepartmentsByFaculty(
-    String facultyId,
-  ) async {
+  Future<List<DepartmentEntity>> getDepartmentsByFaculty(String facultyId) async {
     final response = await dioClient.dio.get(
       AppConfig.getDepartmentOfFacultyEndpoint(facultyId),
     );
@@ -74,6 +118,45 @@ class FndRemoteDataSourceImpl implements FndRemoteDataSource {
           .toList();
     } else {
       throw Exception(response.data['message'] ?? 'Failed to load departments');
+    }
+  }
+
+  @override
+  Future<DepartmentEntity> createDepartment(Map<String, dynamic> departmentData) async {
+    final response = await dioClient.dio.post(
+      AppConfig.createDepartmentEndpoint,
+      data: departmentData,
+    );
+
+    if (response.data['code'] == AppConfig.successCode) {
+      return DepartmentModel.fromJson(response.data['data']);
+    } else {
+      throw Exception(response.data['message'] ?? 'Failed to create department');
+    }
+  }
+
+  @override
+  Future<DepartmentEntity> updateDepartment(String id, Map<String, dynamic> departmentData) async {
+    final response = await dioClient.dio.put(
+      AppConfig.editDepartmentEndpoint(id),
+      data: departmentData,
+    );
+
+    if (response.data['code'] == AppConfig.successCode) {
+      return DepartmentModel.fromJson(response.data['data']);
+    } else {
+      throw Exception(response.data['message'] ?? 'Failed to update department');
+    }
+  }
+
+  @override
+  Future<void> deleteDepartment(String id) async {
+    final response = await dioClient.dio.delete(
+      AppConfig.deleteDepartmentEndpoint(id),
+    );
+
+    if (response.data['code'] != AppConfig.successCode) {
+      throw Exception(response.data['message'] ?? 'Failed to delete department');
     }
   }
 }
