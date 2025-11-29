@@ -9,6 +9,7 @@ class AppConfig {
   static const String lecturerEndpoint = '/lecturer';
   static const String classEndpoint = '/class';
   static const String attendanceEndpoint = '/attendance';
+  static const String studentEndpoint = '/student';
   // End of Base URL //
 
   // Auth Endpoints //
@@ -66,6 +67,14 @@ class AppConfig {
   static const String getAttendanceRecordsForAllStudentsEndpoint = '$attendanceEndpoint/course/attendance/all';
   static const String getStudentCourseAttendanceEndpoint = '$attendanceEndpoint/course/attendance/student';
   // End of Attendance Endpoints //
+
+  // Student Endpoints //
+  static const String getAllStudentsEndpoint = studentEndpoint;
+  static String searchStudentsEndpoint(String query) => '$studentEndpoint/search?query=$query';
+  static String getStudentEndpoint(String id) => '$studentEndpoint/$id';
+  static String editStudentEndpoint(String id) => '$studentEndpoint/$id';
+  static String deleteStudentEndpoint(String id) => '$studentEndpoint/$id';
+  // End of Student Endpoints //
 
   // Network Settings //
   static const int connectTimeout = 30000;

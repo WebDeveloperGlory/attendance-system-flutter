@@ -9,10 +9,13 @@ import 'package:smart_attendance_system/application/pages/admin/dashboard/admin_
 import 'package:smart_attendance_system/application/pages/admin/faculty/admin_faculty_management_screen.dart';
 import 'package:smart_attendance_system/application/pages/admin/faculty/id/admin_faculty_details_screen.dart';
 import 'package:smart_attendance_system/application/pages/admin/lecturer/admin_lecturer_management.dart';
+import 'package:smart_attendance_system/application/pages/admin/student/admin_students_screen.dart';
+import 'package:smart_attendance_system/application/pages/admin/student/id/admin_student_detail_screen.dart';
 import 'package:smart_attendance_system/application/pages/auth/admin_login_screen.dart';
 import 'package:smart_attendance_system/application/pages/auth/cubit/auth_state_cubit.dart';
 import 'package:smart_attendance_system/application/pages/auth/lecturer_login_screen.dart';
 import 'package:smart_attendance_system/application/pages/auth/user_type_selection_screen.dart';
+import 'package:smart_attendance_system/application/pages/lecturer/create_class/create_class_session_screen.dart';
 import 'package:smart_attendance_system/application/pages/lecturer/dashboard/lecturer_dashboard_screen.dart';
 import 'package:smart_attendance_system/application/pages/lecturer/lecturer_shell.dart';
 import 'package:smart_attendance_system/application/pages/lecturer/records/lecturer_attendance_records_screen.dart';
@@ -60,7 +63,14 @@ GoRouter routes(BuildContext context) {
           ),
           GoRoute(
             path: '/admin/students',
-            builder: (context, state) => const AdminDashboardScreen(),
+            builder: (context, state) => const AdminStudentsScreen(),
+          ),
+          GoRoute(
+            path: '/admin/students/:studentId',
+            builder: (context, state) {
+              final studentId = state.pathParameters['studentId']!;
+              return AdminStudentDetailScreen(studentId: studentId);
+            },
           ),
           GoRoute(
             path: '/admin/lecturers',
@@ -90,7 +100,7 @@ GoRouter routes(BuildContext context) {
           ),
           GoRoute(
             path: '/lecturer/create-class',
-            builder: (context, state) => const LecturerDashboardScreen(),
+            builder: (context, state) => const CreateClassSessionScreen(),
           ),
           GoRoute(
             path: '/lecturer/records',
