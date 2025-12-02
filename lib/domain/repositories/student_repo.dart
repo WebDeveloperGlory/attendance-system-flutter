@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:smart_attendance_system/domain/entities/student_detail_entity.dart';
 import 'package:smart_attendance_system/domain/entities/student_entity.dart';
 import 'package:smart_attendance_system/domain/failiures/failures.dart';
 
@@ -15,4 +16,5 @@ abstract class StudentRepo {
     String studentId,
     String fingerprintHash,
   );
+  Future<Either<Failure, StudentDetailEntity>> getStudentDetail(String studentId);
 }

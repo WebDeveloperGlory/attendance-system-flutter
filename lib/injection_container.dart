@@ -5,6 +5,7 @@ import 'package:smart_attendance_system/application/pages/admin/lecturer/cubit/l
 import 'package:smart_attendance_system/application/pages/admin/faculty/cubit/faculty_management_cubit.dart';
 import 'package:smart_attendance_system/application/pages/admin/faculty/id/cubit/faculty_details_cubit.dart';
 import 'package:smart_attendance_system/application/pages/admin/student/cubit/student_management_cubit.dart';
+import 'package:smart_attendance_system/application/pages/admin/student/id/cubit/student_detail_cubit.dart';
 import 'package:smart_attendance_system/application/pages/auth/cubit/auth_state_cubit.dart';
 import 'package:smart_attendance_system/application/pages/auth/cubit/login_cubit.dart';
 import 'package:smart_attendance_system/application/pages/lecturer/create_class/cubit/create_class_cubit.dart';
@@ -56,6 +57,12 @@ void init() {
   getIt.registerFactory(() => StudentManagementCubit(
         studentRepo: getIt(),
       ));
+  getIt.registerFactoryParam<StudentDetailCubit, String, void>(
+        (studentId, _) => StudentDetailCubit(
+          studentRepo: getIt(),
+          studentId: studentId,
+        ),
+      );
   getIt.registerFactory(() => CreateClassCubit());
 
 

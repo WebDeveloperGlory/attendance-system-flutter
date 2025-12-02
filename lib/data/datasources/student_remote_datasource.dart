@@ -1,7 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:smart_attendance_system/application/core/config/app_config.dart';
 import 'package:smart_attendance_system/application/core/network/dio_client.dart';
+import 'package:smart_attendance_system/data/models/student_detail_model.dart';
 import 'package:smart_attendance_system/data/models/student_model.dart';
+import 'package:smart_attendance_system/domain/entities/student_detail_entity.dart';
 import 'package:smart_attendance_system/domain/entities/student_entity.dart';
 
 abstract class StudentRemoteDataSource {
@@ -14,6 +16,7 @@ abstract class StudentRemoteDataSource {
     Map<String, dynamic> updates,
   );
   Future<void> registerFingerprint(String studentId, String fingerprintHash);
+  Future<StudentDetailEntity> getStudentDetail(String studentId);
 }
 
 class StudentRemoteDataSourceImpl implements StudentRemoteDataSource {
@@ -151,6 +154,30 @@ class StudentRemoteDataSourceImpl implements StudentRemoteDataSource {
         e.response?.data?['message'] ??
             e.message ??
             'Failed to register fingerprint',
+      );
+    }
+  }
+
+  // Add this implementation to your StudentRemoteDataSourceImpl
+  @override
+  Future<StudentDetailEntity> getStudentDetail(String studentId) async {
+    try {
+      final response = await dioClient.dio.get(
+        AppConfig.getStudentEndpoint(studentId),
+      );
+
+      if (response.data['code'] == AppConfig.successCode) {
+        return StudentDetailModel.fromJson(response.data['data']);
+      } else {
+        throw Exception(
+          response.data['message'] ?? 'Failed to load student details',
+        );
+      }
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data?['message'] ??
+            e.message ??
+            'Failed to load student details',
       );
     }
   }

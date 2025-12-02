@@ -1,122 +1,122 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:smart_attendance_system/domain/entities/student_entity.dart';
+import 'package:smart_attendance_system/domain/entities/student_detail_entity.dart';
 import 'package:smart_attendance_system/domain/failiures/failures.dart';
 import 'package:smart_attendance_system/domain/repositories/student_repo.dart';
 
 part 'student_detail_state.dart';
 
 class StudentDetailCubit extends Cubit<StudentDetailState> {
-  final StudentRepo _studentRepo;
+  final StudentRepo studentRepo;
+  final String studentId;
 
-  StudentDetailCubit(this._studentRepo, {required Object studentRepo}) : super(const StudentDetailInitial());
+  StudentDetailCubit({
+    required this.studentRepo,
+    required this.studentId,
+  }) : super(StudentDetailInitial()) {
+    loadStudentDetails();
+  }
 
-  Future<void> loadStudent(String studentId) async {
-    emit(StudentDetailLoading(studentId));
+  Future<void> loadStudentDetails() async {
+    emit(StudentDetailLoading());
     
-    try {
-      final result = await _studentRepo.getStudentById(studentId);
-      result.fold(
-        (failure) => emit(StudentDetailError(failure, studentId)),
-        (student) => emit(StudentDetailLoaded(student)),
-      );
-    } catch (e) {
-      emit(StudentDetailError(ServerFailure(e.toString()), studentId));
-    }
+    final result = await studentRepo.getStudentDetail(studentId);
+    
+    result.fold(
+      (failure) {
+        emit(StudentDetailError(failure: failure));
+      },
+      (student) {
+        emit(StudentDetailLoaded(student: student));
+      },
+    );
   }
 
   Future<void> updateStudentStatus(bool isActive) async {
     final currentState = state;
-    if (currentState is! StudentDetailLoaded) return;
-
-    emit(StudentDetailUpdating(currentState.student));
-
-    try {
-      final result = await _studentRepo.updateStudent(
-        currentState.student.id, 
+    if (currentState is StudentDetailLoaded) {
+      final result = await studentRepo.updateStudent(
+        studentId,
         {'isActive': isActive},
       );
       
       result.fold(
-        (failure) => emit(StudentDetailError(failure, currentState.student.id)),
-        (student) => emit(StudentDetailLoaded(student)),
-      );
-    } catch (e) {
-      emit(StudentDetailError(ServerFailure(e.toString()), currentState.student.id));
-      // Revert to original state on error
-      emit(StudentDetailLoaded(currentState.student));
-    }
-  }
-
-  Future<void> updateStudentProfile(Map<String, dynamic> updates) async {
-    final currentState = state;
-    if (currentState is! StudentDetailLoaded) return;
-
-    emit(StudentDetailUpdating(currentState.student));
-
-    try {
-      final result = await _studentRepo.updateStudent(
-        currentState.student.id, 
-        updates,
-      );
-      
-      result.fold(
-        (failure) => emit(StudentDetailError(failure, currentState.student.id)),
-        (student) => emit(StudentDetailLoaded(student)),
-      );
-    } catch (e) {
-      emit(StudentDetailError(ServerFailure(e.toString()), currentState.student.id));
-      // Revert to original state on error
-      emit(StudentDetailLoaded(currentState.student));
-    }
-  }
-
-  Future<void> registerFingerprint(String fingerprintHash) async {
-    final currentState = state;
-    if (currentState is! StudentDetailLoaded) return;
-
-    emit(StudentDetailUpdating(currentState.student));
-
-    try {
-      final result = await _studentRepo.registerFingerprint(
-        currentState.student.id, 
-        fingerprintHash,
-      );
-      
-      result.fold(
-        (failure) => emit(StudentDetailError(failure, currentState.student.id)),
-        (_) {
-          // Reload student to get updated fingerprint status
-          loadStudent(currentState.student.id);
+        (failure) {
+          emit(StudentDetailError(failure: failure));
+          // Reload to restore previous state
+          loadStudentDetails();
+        },
+        (updatedStudent) {
+          // Since updateStudent returns base student, reload full details
+          loadStudentDetails();
         },
       );
-    } catch (e) {
-      emit(StudentDetailError(ServerFailure(e.toString()), currentState.student.id));
-      // Revert to original state on error
-      emit(StudentDetailLoaded(currentState.student));
+    }
+  }
+
+  Future<void> updateStudentProfile({
+    required String name,
+    required String email,
+    required String level,
+    required String facultyId,
+    required String departmentId,
+  }) async {
+    final currentState = state;
+    if (currentState is StudentDetailLoaded) {
+      final updates = {
+        'name': name,
+        'email': email,
+        'level': level,
+        'facultyId': facultyId,
+        'departmentId': departmentId,
+      };
+      
+      final result = await studentRepo.updateStudent(studentId, updates);
+      
+      result.fold(
+        (failure) {
+          emit(StudentDetailError(failure: failure));
+        },
+        (updatedStudent) {
+          // Reload full details since update returns base student
+          loadStudentDetails();
+        },
+      );
     }
   }
 
   Future<void> deleteStudent() async {
-    final currentState = state;
-    if (currentState is! StudentDetailLoaded) return;
-
-    emit(StudentDetailDeleting(currentState.student));
+    final result = await studentRepo.deleteStudent(studentId);
     
-    try {
-      final result = await _studentRepo.deleteStudent(currentState.student.id);
+    result.fold(
+      (failure) {
+        emit(StudentDetailError(failure: failure));
+      },
+      (_) {
+        emit(StudentDetailDeleted());
+      },
+    );
+  }
+
+  Future<void> registerFingerprint() async {
+    // Simulate fingerprint registration
+    // In a real app, this would integrate with hardware
+    final currentState = state;
+    if (currentState is StudentDetailLoaded) {
+      final result = await studentRepo.registerFingerprint(
+        studentId, 
+        'fingerprint_${DateTime.now().millisecondsSinceEpoch}'
+      );
+      
       result.fold(
         (failure) {
-          emit(StudentDetailError(failure, currentState.student.id));
-          // Revert to loaded state on error
-          emit(StudentDetailLoaded(currentState.student));
+          emit(StudentDetailError(failure: failure));
         },
-        (_) => emit(const StudentDetailDeleted()),
+        (_) {
+          // Reload student to get updated fingerprint status
+          loadStudentDetails();
+        },
       );
-    } catch (e) {
-      emit(StudentDetailError(ServerFailure(e.toString()), currentState.student.id));
-      // Revert to loaded state on error
-      emit(StudentDetailLoaded(currentState.student));
     }
   }
 }

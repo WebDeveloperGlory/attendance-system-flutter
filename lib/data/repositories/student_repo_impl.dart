@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:smart_attendance_system/data/datasources/student_remote_datasource.dart';
+import 'package:smart_attendance_system/domain/entities/student_detail_entity.dart';
 import 'package:smart_attendance_system/domain/entities/student_entity.dart';
 import 'package:smart_attendance_system/domain/failiures/failures.dart';
 import 'package:smart_attendance_system/domain/repositories/student_repo.dart';
@@ -105,6 +106,20 @@ class StudentRepoImpl implements StudentRepo {
       final errorMessage =
           e.response?.data?['message'] ?? e.message ?? 'Server error';
       return ServerFailure(errorMessage);
+    }
+  }
+
+  @override
+  Future<Either<Failure, StudentDetailEntity>> getStudentDetail(
+    String studentId,
+  ) async {
+    try {
+      final result = await remoteDataSource.getStudentDetail(studentId);
+      return Right(result);
+    } on DioException catch (e) {
+      return Left(_handleDioError(e));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
     }
   }
 }

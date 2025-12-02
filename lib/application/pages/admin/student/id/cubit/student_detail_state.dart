@@ -1,64 +1,41 @@
 part of 'student_detail_cubit.dart';
 
 abstract class StudentDetailState extends Equatable {
-  final String studentId;
-
-  const StudentDetailState({required this.studentId});
+  const StudentDetailState();
 
   @override
-  List<Object> get props => [studentId];
+  List<Object> get props => [];
 }
 
-class StudentDetailInitial extends StudentDetailState {
-  const StudentDetailInitial() : super(studentId: '');
-}
+class StudentDetailInitial extends StudentDetailState {}
 
-class StudentDetailLoading extends StudentDetailState {
-  final String loadingStudentId;
-
-  const StudentDetailLoading(this.loadingStudentId) : super(studentId: loadingStudentId);
-
-  @override
-  List<Object> get props => [loadingStudentId];
-}
+class StudentDetailLoading extends StudentDetailState {}
 
 class StudentDetailLoaded extends StudentDetailState {
-  final StudentEntity student;
+  final StudentDetailEntity student;
 
-  StudentDetailLoaded(this.student) : super(studentId: student.id);
-
-  @override
-  List<Object> get props => [student];
-}
-
-class StudentDetailUpdating extends StudentDetailState {
-  final StudentEntity student;
-
-  StudentDetailUpdating(this.student) : super(studentId: student.id);
+  const StudentDetailLoaded({required this.student});
 
   @override
   List<Object> get props => [student];
-}
-
-class StudentDetailDeleting extends StudentDetailState {
-  final StudentEntity student;
-
-  StudentDetailDeleting(this.student) : super(studentId: student.id);
-
-  @override
-  List<Object> get props => [student];
-}
-
-class StudentDetailDeleted extends StudentDetailState {
-  const StudentDetailDeleted() : super(studentId: '');
 }
 
 class StudentDetailError extends StudentDetailState {
   final Failure failure;
-  final String errorStudentId;
 
-  const StudentDetailError(this.failure, this.errorStudentId) : super(studentId: errorStudentId);
+  const StudentDetailError({required this.failure});
 
   @override
-  List<Object> get props => [failure, errorStudentId];
+  List<Object> get props => [failure];
+}
+
+class StudentDetailDeleted extends StudentDetailState {}
+
+class StudentDetailUpdating extends StudentDetailState {
+  final StudentDetailEntity student;
+
+  const StudentDetailUpdating({required this.student});
+
+  @override
+  List<Object> get props => [student];
 }

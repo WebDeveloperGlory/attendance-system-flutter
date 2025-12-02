@@ -140,7 +140,6 @@ GoRouter routes(BuildContext context) {
 }
 
 // ========== UNIFIED REDIRECT LOGIC ==========
-
 String? _handleRedirect(BuildContext context, GoRouterState state) {
   final authState = context.read<AuthStateCubit>().state;
   final location = state.uri.toString();
