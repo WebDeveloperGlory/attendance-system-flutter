@@ -1,168 +1,116 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:smart_attendance_system/application/pages/lecturer/dashboard/cubit/lecturer_dashboard_cubit.dart';
+import 'package:smart_attendance_system/domain/entities/lecturer_dashboard_entity.dart';
+import 'package:smart_attendance_system/domain/failiures/failures.dart';
+import 'package:smart_attendance_system/injection_container.dart';
 
 class LecturerDashboardScreen extends StatelessWidget {
   const LecturerDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) =>
+          getIt<LecturerDashboardCubit>()..loadDashboardAnalytics(),
+      child: Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        body: SafeArea(
+          child: BlocBuilder<LecturerDashboardCubit, LecturerDashboardState>(
+            builder: (context, state) {
+              if (state is LecturerDashboardLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (state is LecturerDashboardError) {
+                return _buildErrorState(context, state.failure);
+              }
+
+              if (state is LecturerDashboardLoaded) {
+                return _buildContent(context, state.dashboard);
+              }
+
+              return const Center(child: CircularProgressIndicator());
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent(
+    BuildContext context,
+    LecturerDashboardEntity dashboard,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    final List<Course> lecturerCourses = [
-      Course(
-        id: "course-1",
-        name: "Data Structures",
-        code: "CSC 301",
-        level: "300",
-        department: "Computer Science",
-        faculty: "Science",
-        studentCount: 45,
-        schedule: ClassSchedule(
-          dayOfWeek: "Monday",
-          startTime: "10:00",
-          endTime: "12:00",
-        ),
-        isActive: true,
-      ),
-      Course(
-        id: "course-2",
-        name: "Algorithm Design",
-        code: "CSC 401",
-        level: "400",
-        department: "Computer Science",
-        faculty: "Science",
-        studentCount: 38,
-        schedule: ClassSchedule(
-          dayOfWeek: "Wednesday",
-          startTime: "14:00",
-          endTime: "16:00",
-        ),
-        isActive: true,
-      ),
-      Course(
-        id: "course-3",
-        name: "Programming II",
-        code: "CSC 201",
-        level: "200",
-        department: "Computer Science",
-        faculty: "Science",
-        studentCount: 52,
-        schedule: ClassSchedule(
-          dayOfWeek: "Friday",
-          startTime: "09:00",
-          endTime: "11:00",
-        ),
-        isActive: true,
-      ),
-    ];
+    final totalStudents = dashboard.courses.fold(
+      0,
+      (sum, course) => sum + course.studentCount,
+    );
 
-    final List<ClassSession> upcomingClassSessions = [
-      ClassSession(
-        id: "class-1",
-        courseCode: "CSC 301",
-        courseName: "Data Structures",
-        date: "Today",
-        startTime: "10:00 AM",
-        endTime: "12:00 PM",
-        topic: "Binary Trees and Traversal",
-        studentCount: 45,
-        status: "upcoming",
-      ),
-      ClassSession(
-        id: "class-2",
-        courseCode: "CSC 401",
-        courseName: "Algorithm Design",
-        date: "Today",
-        startTime: "2:00 PM",
-        endTime: "4:00 PM",
-        topic: "Dynamic Programming",
-        studentCount: 38,
-        status: "upcoming",
-      ),
-      ClassSession(
-        id: "class-3",
-        courseCode: "CSC 201",
-        courseName: "Programming II",
-        date: "Tomorrow",
-        startTime: "9:00 AM",
-        endTime: "11:00 AM",
-        topic: "Object-Oriented Programming",
-        studentCount: 52,
-        status: "scheduled",
-      ),
-    ];
+    final activeCoursesCount = dashboard.courses
+        .where((course) => course.isActive)
+        .length;
 
-    final List<AttendanceRecord> recentAttendanceRecords = [
-      AttendanceRecord(
-        courseCode: "CSC 301",
-        courseName: "Data Structures",
-        date: "Oct 23, 2025",
-        totalStudents: 45,
-        presentCount: 42,
-        fingerprintVerified: 40,
-        manualOverride: 2,
-      ),
-      AttendanceRecord(
-        courseCode: "CSC 401",
-        courseName: "Algorithm Design",
-        date: "Oct 22, 2025",
-        totalStudents: 38,
-        presentCount: 35,
-        fingerprintVerified: 33,
-        manualOverride: 2,
-      ),
-      AttendanceRecord(
-        courseCode: "CSC 201",
-        courseName: "Programming II",
-        date: "Oct 21, 2025",
-        totalStudents: 52,
-        presentCount: 48,
-        fingerprintVerified: 46,
-        manualOverride: 2,
-      ),
-    ];
-
-    final List<StatCardData> stats = [
-      StatCardData(
-        title: "Active Courses",
-        value: lecturerCourses.where((c) => c.isActive).length.toString(),
-        icon: Icons.menu_book,
-        description: "Assigned",
-      ),
-      StatCardData(
-        title: "Total Students",
-        value: lecturerCourses.fold(0, (sum, c) => sum + c.studentCount).toString(),
-        icon: Icons.people,
-        description: "All courses",
-      ),
-      StatCardData(
-        title: "Avg. Attendance",
-        value: "92%",
-        icon: Icons.trending_up,
-        description: "Last 3 sessions",
-      ),
-    ];
-
-    return Scaffold(
-      backgroundColor: colorScheme.surface,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            Container(
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                border: Border(
-                  bottom: BorderSide(
-                    color: colorScheme.outline,
+    return Column(
+      children: [
+        // Header
+        Container(
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            border: Border(bottom: BorderSide(color: colorScheme.outline)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                // Menu Button
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: colorScheme.surface,
+                  ),
+                  child: IconButton(
+                    onPressed: () {
+                      // TODO: Implement menu toggle
+                    },
+                    icon: Icon(
+                      Icons.menu,
+                      size: 20,
+                      color: colorScheme.onSurface,
+                    ),
                   ),
                 ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
+                const SizedBox(width: 12),
+                // Title
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "My Courses",
+                        style: textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      Text(
+                        "Lecturer Dashboard",
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Notification Button
+                Stack(
                   children: [
-                    // Menu Button
                     Container(
                       width: 40,
                       height: 40,
@@ -172,187 +120,184 @@ class LecturerDashboardScreen extends StatelessWidget {
                       ),
                       child: IconButton(
                         onPressed: () {
-                          // TODO: Implement menu toggle
+                          // TODO: Implement notifications
                         },
                         icon: Icon(
-                          Icons.menu,
+                          Icons.notifications_outlined,
                           size: 20,
                           color: colorScheme.onSurface,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    // Title
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "My Courses",
-                            style: textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.onSurface,
-                            ),
-                          ),
-                          Text(
-                            "Dr. Sarah Johnson",
-                            style: textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary,
+                          shape: BoxShape.circle,
+                        ),
                       ),
                     ),
-                    // Notification Button
-                    Stack(
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            color: colorScheme.surface,
-                          ),
-                          child: IconButton(
-                            onPressed: () {
-                              // TODO: Implement notifications
-                            },
-                            icon: Icon(
-                              Icons.notifications_outlined,
-                              size: 20,
-                              color: colorScheme.onSurface,
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 10,
-                          right: 10,
-                          child: Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: colorScheme.primary,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Content
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Stats Grid
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 0.9,
+                  ),
+                  itemCount: 3,
+                  itemBuilder: (context, index) {
+                    return _buildStatCard(
+                      context,
+                      index,
+                      activeCoursesCount,
+                      totalStudents,
+                      dashboard.totalClasses,
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 16),
+
+                // Quick Create Button
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        colorScheme.primary,
+                        colorScheme.primary.withValues(alpha: 0.9),
                       ],
                     ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    // Stats Grid
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 0.9,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colorScheme.primary.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
-                      itemCount: stats.length,
-                      itemBuilder: (context, index) {
-                        return _buildStatCard(context, stats[index]);
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () {
+                        context.go('/lecturer/create-class');
                       },
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Quick Create Button
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            colorScheme.primary,
-                            colorScheme.primary.withValues(alpha: 0.9),
+                      child: Container(
+                        height: 56,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.add,
+                              size: 20,
+                              color: colorScheme.onPrimary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              "Create New Class Session",
+                              style: textTheme.labelLarge?.copyWith(
+                                color: colorScheme.onPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: colorScheme.primary.withValues(alpha: 0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(16),
-                          onTap: () {
-                            // TODO: Implement create class session
-                          },
-                          child: Container(
-                            height: 56,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.add,
-                                  size: 20,
-                                  color: colorScheme.onPrimary,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  "Create New Class Session",
-                                  style: textTheme.labelLarge?.copyWith(
-                                    color: colorScheme.onPrimary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
                       ),
                     ),
-
-                    const SizedBox(height: 24),
-
-                    // Upcoming Sessions
-                    _buildUpcomingSessionsSection(context, upcomingClassSessions),
-
-                    const SizedBox(height: 24),
-
-                    // My Courses Section
-                    _buildMyCoursesSection(context, lecturerCourses),
-
-                    const SizedBox(height: 24),
-
-                    // Recent Attendance Summary
-                    _buildRecentAttendanceSection(context, recentAttendanceRecords),
-                  ],
+                  ),
                 ),
-              ),
+
+                const SizedBox(height: 24),
+
+                // Upcoming Sessions
+                if (dashboard.upcomingClasses.isNotEmpty)
+                  _buildUpcomingSessionsSection(
+                    context,
+                    dashboard.upcomingClasses,
+                  ),
+
+                const SizedBox(height: 24),
+
+                // My Courses Section
+                if (dashboard.courses.isNotEmpty)
+                  _buildMyCoursesSection(context, dashboard.courses),
+
+                const SizedBox(height: 24),
+
+                // Empty State Messages
+                if (dashboard.upcomingClasses.isEmpty &&
+                    dashboard.courses.isNotEmpty)
+                  _buildNoUpcomingClasses(context),
+
+                if (dashboard.courses.isEmpty) _buildNoCoursesAssigned(context),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
-  Widget _buildStatCard(BuildContext context, StatCardData stat) {
+  Widget _buildStatCard(
+    BuildContext context,
+    int index,
+    int activeCoursesCount,
+    int totalStudents,
+    int totalClasses,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+
+    final List<StatCardData> stats = [
+      StatCardData(
+        title: "Active Courses",
+        value: activeCoursesCount.toString(),
+        icon: Icons.menu_book,
+        description: "Courses Assigned",
+      ),
+      StatCardData(
+        title: "Total Students",
+        value: totalStudents.toString(),
+        icon: Icons.people,
+        description: "All students",
+      ),
+      StatCardData(
+        title: "Total Classes",
+        value: totalClasses.toString(),
+        icon: Icons.class_,
+        description: "Classes This semester",
+      ),
+    ];
+
+    final stat = stats[index];
 
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
       ),
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -377,11 +322,7 @@ class LecturerDashboardScreen extends StatelessWidget {
                 ),
               ],
             ),
-            child: Icon(
-              stat.icon,
-              size: 20,
-              color: colorScheme.onPrimary,
-            ),
+            child: Icon(stat.icon, size: 20, color: colorScheme.onPrimary),
           ),
           const SizedBox(height: 8),
           Text(
@@ -402,9 +343,19 @@ class LecturerDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildUpcomingSessionsSection(BuildContext context, List<ClassSession> sessions) {
+  Widget _buildUpcomingSessionsSection(
+    BuildContext context,
+    List<UpcomingClassWithCourseEntity> sessions,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+
+    // Sort by start time (earliest first)
+    final sortedSessions = sessions.toList()
+      ..sort(
+        (a, b) =>
+            a.upcomingClass.startTime.compareTo(b.upcomingClass.startTime),
+      );
 
     return Column(
       children: [
@@ -412,7 +363,7 @@ class LecturerDashboardScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              "Upcoming Sessions",
+              "Upcoming Classes",
               style: textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: colorScheme.onSurface,
@@ -434,15 +385,18 @@ class LecturerDashboardScreen extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Column(
-          children: sessions.map((session) {
-            return _buildSessionCard(context, session);
+          children: sortedSessions.take(3).map((session) {
+            return _buildUpcomingClassCard(context, session);
           }).toList(),
         ),
       ],
     );
   }
 
-  Widget _buildSessionCard(BuildContext context, ClassSession session) {
+  Widget _buildUpcomingClassCard(
+    BuildContext context,
+    UpcomingClassWithCourseEntity session,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -451,9 +405,7 @@ class LecturerDashboardScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -504,7 +456,10 @@ class LecturerDashboardScreen extends StatelessWidget {
                         runSpacing: 8,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: colorScheme.primary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
@@ -518,15 +473,20 @@ class LecturerDashboardScreen extends StatelessWidget {
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: colorScheme.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              session.date,
+                              session.formattedDate,
                               style: textTheme.labelSmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
+                                color: session.isToday
+                                    ? colorScheme.primary
+                                    : colorScheme.onSurfaceVariant,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -547,6 +507,8 @@ class LecturerDashboardScreen extends StatelessWidget {
                         style: textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 12),
                       Row(
@@ -560,7 +522,7 @@ class LecturerDashboardScreen extends StatelessWidget {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                "${session.startTime} - ${session.endTime}",
+                                session.formattedTime,
                                 style: textTheme.labelSmall?.copyWith(
                                   color: colorScheme.onSurfaceVariant,
                                 ),
@@ -596,7 +558,7 @@ class LecturerDashboardScreen extends StatelessWidget {
                 ),
               ],
             ),
-            if (session.status == "upcoming") ...[
+            if (session.isToday) ...[
               const SizedBox(height: 16),
               Container(
                 decoration: BoxDecoration(
@@ -647,7 +609,10 @@ class LecturerDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMyCoursesSection(BuildContext context, List<Course> courses) {
+  Widget _buildMyCoursesSection(
+    BuildContext context,
+    List<CourseEntity> courses,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -661,26 +626,33 @@ class LecturerDashboardScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        // TODO: Add search and filter functionality
-        Text(
-          "Search and filter functionality would be implemented here",
-          style: textTheme.bodyMedium?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 16),
         // Courses List
         Column(
-          children: courses.map((course) {
+          children: courses.take(5).map((course) {
             return _buildCourseCard(context, course);
           }).toList(),
         ),
+        if (courses.length > 5)
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: TextButton(
+              onPressed: () {
+                // TODO: Implement view all courses
+              },
+              child: Text(
+                "View All ${courses.length} Courses",
+                style: textTheme.labelMedium?.copyWith(
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
 
-  Widget _buildCourseCard(BuildContext context, Course course) {
+  Widget _buildCourseCard(BuildContext context, CourseEntity course) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -689,9 +661,7 @@ class LecturerDashboardScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -710,7 +680,10 @@ class LecturerDashboardScreen extends StatelessWidget {
               runSpacing: 8,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: colorScheme.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -724,7 +697,10 @@ class LecturerDashboardScreen extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(8),
@@ -737,6 +713,24 @@ class LecturerDashboardScreen extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (!course.isActive)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      "Inactive",
+                      style: textTheme.labelSmall?.copyWith(
+                        color: Colors.red,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
               ],
             ),
             const SizedBox(height: 8),
@@ -745,13 +739,6 @@ class LecturerDashboardScreen extends StatelessWidget {
               style: textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              "${course.department} • ${course.faculty}",
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 12),
@@ -773,40 +760,44 @@ class LecturerDashboardScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(width: 16),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.calendar_today,
-                      size: 16,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      course.schedule.dayOfWeek,
-                      style: textTheme.labelSmall?.copyWith(
+                if (course.schedule?.dayOfWeek != null) ...[
+                  const SizedBox(width: 16),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_today,
+                        size: 16,
                         color: colorScheme.onSurfaceVariant,
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(width: 16),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.access_time,
-                      size: 16,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      course.schedule.startTime,
-                      style: textTheme.labelSmall?.copyWith(
+                      const SizedBox(width: 4),
+                      Text(
+                        course.schedule!.dayOfWeek!,
+                        style: textTheme.labelSmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                if (course.schedule?.startTime != null) ...[
+                  const SizedBox(width: 16),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.access_time,
+                        size: 16,
                         color: colorScheme.onSurfaceVariant,
                       ),
-                    ),
-                  ],
-                ),
+                      const SizedBox(width: 4),
+                      Text(
+                        course.schedule!.startTime!,
+                        style: textTheme.labelSmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 12),
@@ -832,154 +823,116 @@ class LecturerDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentAttendanceSection(BuildContext context, List<AttendanceRecord> records) {
+  Widget _buildNoUpcomingClasses(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
     return Container(
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.3)),
       ),
-      padding: const EdgeInsets.all(20),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Icon(
+            Icons.calendar_today,
+            size: 48,
+            color: colorScheme.onSurface.withOpacity(0.3),
+          ),
+          const SizedBox(height: 12),
           Text(
-            "Recent Attendance",
+            "No Upcoming Classes",
             style: textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: colorScheme.onSurface,
             ),
           ),
-          const SizedBox(height: 16),
-          Column(
-            children: records.map((record) {
-              return _buildAttendanceRecord(context, record);
-            }).toList(),
+          const SizedBox(height: 8),
+          Text(
+            "You don't have any classes scheduled for today or tomorrow.",
+            style: textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildAttendanceRecord(BuildContext context, AttendanceRecord record) {
+  Widget _buildNoCoursesAssigned(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final percentage = ((record.presentCount / record.totalStudents) * 100).round();
 
-    Color progressColor;
-    if (percentage >= 85) {
-      progressColor = Colors.green;
-    } else if (percentage >= 70) {
-      progressColor = Colors.orange;
-    } else {
-      progressColor = Colors.red;
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+    return Container(
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.3)),
+      ),
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      record.courseName,
-                      style: textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                    Text(
-                      record.date,
-                      style: textTheme.labelSmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    "${record.presentCount}/${record.totalStudents}",
-                    style: textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  Text(
-                    "$percentage%",
-                    style: textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+          Icon(
+            Icons.menu_book,
+            size: 48,
+            color: colorScheme.onSurface.withOpacity(0.3),
           ),
-          const SizedBox(height: 8),
-          Container(
-            height: 8,
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: percentage / 100,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      progressColor,
-                      progressColor.withValues(alpha: 0.8),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
+          const SizedBox(height: 16),
+          Text(
+            "No Courses Assigned",
+            style: textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(
-                Icons.fingerprint,
-                size: 14,
-                color: colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                "${record.fingerprintVerified} verified",
-                style: textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                "•",
-                style: textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                "${record.manualOverride} manual",
-                style: textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
+          Text(
+            "You haven't been assigned to any courses yet. Please contact the administrator.",
+            style: textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(BuildContext context, Failure failure) {
+    final theme = Theme.of(context);
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
+          const SizedBox(height: 16),
+          Text(
+            'Failed to load dashboard',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            failure.message,
+            style: TextStyle(
+              fontSize: 14,
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () {
+              context.read<LecturerDashboardCubit>().loadDashboardAnalytics();
+            },
+            child: const Text('Try Again'),
           ),
         ],
       ),
@@ -987,87 +940,7 @@ class LecturerDashboardScreen extends StatelessWidget {
   }
 }
 
-// Data Models
-class Course {
-  final String id;
-  final String name;
-  final String code;
-  final String level;
-  final String department;
-  final String faculty;
-  final int studentCount;
-  final ClassSchedule schedule;
-  final bool isActive;
-
-  const Course({
-    required this.id,
-    required this.name,
-    required this.code,
-    required this.level,
-    required this.department,
-    required this.faculty,
-    required this.studentCount,
-    required this.schedule,
-    required this.isActive,
-  });
-}
-
-class ClassSchedule {
-  final String dayOfWeek;
-  final String startTime;
-  final String endTime;
-
-  const ClassSchedule({
-    required this.dayOfWeek,
-    required this.startTime,
-    required this.endTime,
-  });
-}
-
-class ClassSession {
-  final String id;
-  final String courseCode;
-  final String courseName;
-  final String date;
-  final String startTime;
-  final String endTime;
-  final String topic;
-  final int studentCount;
-  final String status;
-
-  const ClassSession({
-    required this.id,
-    required this.courseCode,
-    required this.courseName,
-    required this.date,
-    required this.startTime,
-    required this.endTime,
-    required this.topic,
-    required this.studentCount,
-    required this.status,
-  });
-}
-
-class AttendanceRecord {
-  final String courseCode;
-  final String courseName;
-  final String date;
-  final int totalStudents;
-  final int presentCount;
-  final int fingerprintVerified;
-  final int manualOverride;
-
-  const AttendanceRecord({
-    required this.courseCode,
-    required this.courseName,
-    required this.date,
-    required this.totalStudents,
-    required this.presentCount,
-    required this.fingerprintVerified,
-    required this.manualOverride,
-  });
-}
-
+// Data Models for UI
 class StatCardData {
   final String title;
   final String value;

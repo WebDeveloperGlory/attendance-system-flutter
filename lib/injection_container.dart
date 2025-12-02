@@ -9,6 +9,7 @@ import 'package:smart_attendance_system/application/pages/admin/student/id/cubit
 import 'package:smart_attendance_system/application/pages/auth/cubit/auth_state_cubit.dart';
 import 'package:smart_attendance_system/application/pages/auth/cubit/login_cubit.dart';
 import 'package:smart_attendance_system/application/pages/lecturer/create_class/cubit/create_class_cubit.dart';
+import 'package:smart_attendance_system/application/pages/lecturer/dashboard/cubit/lecturer_dashboard_cubit.dart';
 import 'package:smart_attendance_system/application/pages/lecturer/records/cubit/attendance_records_cubit.dart';
 import 'package:smart_attendance_system/data/datasources/admin_remote_datasource.dart';
 import 'package:smart_attendance_system/data/datasources/attendance_remote_datasource.dart';
@@ -76,6 +77,9 @@ void init() {
         getLecturerCoursesUseCase: getIt(),
         getCarryoverStudentsUseCase: getIt(),
         createClassSessionUseCase: getIt(),
+      ));
+  getIt.registerFactory(() => LecturerDashboardCubit(
+        lecturerRepo: getIt(),
       ));
 
 

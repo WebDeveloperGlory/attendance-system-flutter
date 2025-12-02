@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:smart_attendance_system/data/datasources/lecturer_remote_datasource.dart';
+import 'package:smart_attendance_system/domain/entities/lecturer_dashboard_entity.dart';
 import 'package:smart_attendance_system/domain/entities/lecturer_entity.dart';
 import 'package:smart_attendance_system/domain/failiures/failures.dart';
 import 'package:smart_attendance_system/domain/repositories/lecturer_repo.dart';
@@ -20,10 +21,12 @@ class LecturerRepoImpl implements LecturerRepo {
           e.type == DioExceptionType.receiveTimeout) {
         return const Left(NetworkFailure());
       }
-      return Left(ServerFailure(
-        e.response?.data['message'] ?? 'Failed to fetch lecturers',
-        statusCode: e.response?.statusCode ?? 500,
-      ));
+      return Left(
+        ServerFailure(
+          e.response?.data['message'] ?? 'Failed to fetch lecturers',
+          statusCode: e.response?.statusCode ?? 500,
+        ),
+      );
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }
@@ -39,10 +42,12 @@ class LecturerRepoImpl implements LecturerRepo {
           e.type == DioExceptionType.receiveTimeout) {
         return const Left(NetworkFailure());
       }
-      return Left(ServerFailure(
-        e.response?.data['message'] ?? 'Failed to delete lecturer',
-        statusCode: e.response?.statusCode ?? 500,
-      ));
+      return Left(
+        ServerFailure(
+          e.response?.data['message'] ?? 'Failed to delete lecturer',
+          statusCode: e.response?.statusCode ?? 500,
+        ),
+      );
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }
@@ -64,10 +69,12 @@ class LecturerRepoImpl implements LecturerRepo {
           e.type == DioExceptionType.receiveTimeout) {
         return const Left(NetworkFailure());
       }
-      return Left(ServerFailure(
-        e.response?.data['message'] ?? 'Failed to reset password',
-        statusCode: e.response?.statusCode ?? 500,
-      ));
+      return Left(
+        ServerFailure(
+          e.response?.data['message'] ?? 'Failed to reset password',
+          statusCode: e.response?.statusCode ?? 500,
+        ),
+      );
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }
@@ -103,10 +110,34 @@ class LecturerRepoImpl implements LecturerRepo {
           e.type == DioExceptionType.receiveTimeout) {
         return const Left(NetworkFailure());
       }
-      return Left(ServerFailure(
-        e.response?.data['message'] ?? 'Failed to create course',
-        statusCode: e.response?.statusCode ?? 500,
-      ));
+      return Left(
+        ServerFailure(
+          e.response?.data['message'] ?? 'Failed to create course',
+          statusCode: e.response?.statusCode ?? 500,
+        ),
+      );
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, LecturerDashboardEntity>>
+  getDashboardAnalytics() async {
+    try {
+      final result = await remoteDataSource.getLecturerDashboard();
+      return Right(result);
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout) {
+        return const Left(NetworkFailure());
+      }
+      return Left(
+        ServerFailure(
+          e.response?.data['message'] ?? 'Failed to create course',
+          statusCode: e.response?.statusCode ?? 500,
+        ),
+      );
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }
