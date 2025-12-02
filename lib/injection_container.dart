@@ -13,20 +13,29 @@ import 'package:smart_attendance_system/application/pages/lecturer/records/cubit
 import 'package:smart_attendance_system/data/datasources/admin_remote_datasource.dart';
 import 'package:smart_attendance_system/data/datasources/attendance_remote_datasource.dart';
 import 'package:smart_attendance_system/data/datasources/auth_remote_datasource.dart';
+import 'package:smart_attendance_system/data/datasources/class_remote_datasource.dart';
+import 'package:smart_attendance_system/data/datasources/course_remote_datasource.dart';
 import 'package:smart_attendance_system/data/datasources/fnd_remote_datasource.dart';
 import 'package:smart_attendance_system/data/datasources/lecturer_remote_datasource.dart';
 import 'package:smart_attendance_system/data/datasources/student_remote_datasource.dart';
 import 'package:smart_attendance_system/data/repositories/admin_repo_impl.dart';
 import 'package:smart_attendance_system/data/repositories/attendance_repo_impl.dart';
 import 'package:smart_attendance_system/data/repositories/auth_repo_impl.dart';
+import 'package:smart_attendance_system/data/repositories/class_repo_impl.dart';
+import 'package:smart_attendance_system/data/repositories/course_repo_impl.dart';
 import 'package:smart_attendance_system/data/repositories/fnd_repo_impl.dart';
 import 'package:smart_attendance_system/data/repositories/lecturer_repo_impl.dart';
 import 'package:smart_attendance_system/data/repositories/student_repo_impl.dart';
 import 'package:smart_attendance_system/domain/repositories/admin_repo.dart';
 import 'package:smart_attendance_system/domain/repositories/attendance_repo.dart';
+import 'package:smart_attendance_system/domain/repositories/class_repo.dart';
+import 'package:smart_attendance_system/domain/repositories/course_repo.dart';
 import 'package:smart_attendance_system/domain/repositories/fnd_repo.dart';
 import 'package:smart_attendance_system/domain/repositories/lecturer_repo.dart';
 import 'package:smart_attendance_system/domain/repositories/student_repo.dart';
+import 'package:smart_attendance_system/domain/usecases/create_class_session_usecase.dart';
+import 'package:smart_attendance_system/domain/usecases/get_carryover_students_usecase.dart';
+import 'package:smart_attendance_system/domain/usecases/get_lecturer_courses_usecase.dart';
 import 'package:smart_attendance_system/domain/usecases/login_usecase.dart';
 
 final getIt = GetIt.instance;
@@ -63,11 +72,18 @@ void init() {
           studentId: studentId,
         ),
       );
-  getIt.registerFactory(() => CreateClassCubit());
+  getIt.registerFactory(() => CreateClassCubit(
+        getLecturerCoursesUseCase: getIt(),
+        getCarryoverStudentsUseCase: getIt(),
+        createClassSessionUseCase: getIt(),
+      ));
 
 
   // Use cases
   getIt.registerLazySingleton(() => LoginUseCase(getIt()));
+  getIt.registerLazySingleton(() => GetLecturerCoursesUseCase(repository: getIt()));
+  getIt.registerLazySingleton(() => GetCarryoverStudentsUseCase(repository: getIt()));
+  getIt.registerLazySingleton(() => CreateClassSessionUseCase(repository: getIt()));
 
   // Repositories
   getIt.registerLazySingleton<AuthRepositoryImpl>(
@@ -88,6 +104,12 @@ void init() {
   getIt.registerLazySingleton<StudentRepo>(
     () => StudentRepoImpl(remoteDataSource: getIt()),
   );
+  getIt.registerLazySingleton<CourseRepo>(
+    () => CourseRepoImpl(remoteDataSource: getIt()),
+  );
+  getIt.registerLazySingleton<ClassRepo>(
+    () => ClassRepoImpl(remoteDataSource: getIt()),
+  );
 
   // Data sources
   getIt.registerLazySingleton<RemoteDataSource>(
@@ -107,6 +129,12 @@ void init() {
   );
   getIt.registerLazySingleton<StudentRemoteDataSource>(
     () => StudentRemoteDataSourceImpl(dioClient: getIt()),
+  );
+  getIt.registerLazySingleton<CourseRemoteDataSource>(
+    () => CourseRemoteDataSourceImpl(dioClient: getIt()),
+  );
+  getIt.registerLazySingleton<ClassRemoteDataSource>(
+    () => ClassRemoteDataSourceImpl(dioClient: getIt()),
   );
 
   // External

@@ -1,49 +1,96 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:smart_attendance_system/domain/entities/course_entity.dart';
 import 'package:smart_attendance_system/domain/failiures/failures.dart';
+import 'package:smart_attendance_system/domain/usecases/get_lecturer_courses_usecase.dart';
+import 'package:smart_attendance_system/domain/usecases/get_carryover_students_usecase.dart';
+import 'package:smart_attendance_system/domain/usecases/create_class_session_usecase.dart';
+import 'package:smart_attendance_system/data/models/carryover_student_model.dart';
+import 'package:smart_attendance_system/data/models/create_class_request_model.dart';
 
 part 'create_class_state.dart';
 
 class CreateClassCubit extends Cubit<CreateClassState> {
-  CreateClassCubit() : super(const CreateClassState());
+  final GetLecturerCoursesUseCase getLecturerCoursesUseCase;
+  final GetCarryoverStudentsUseCase getCarryoverStudentsUseCase;
+  final CreateClassSessionUseCase createClassSessionUseCase;
 
-  // Mock data - replace with actual API calls
-  final List<Course> lecturerCourses = [
-    Course(
-      id: "course-1",
-      name: "Data Structures",
-      code: "CSC 301",
-      level: "300",
-      department: "Computer Science",
-      students: [
-        Student(id: "s1", name: "John Doe", matricNumber: "CSC/2021/001"),
-        Student(id: "s2", name: "Jane Smith", matricNumber: "CSC/2021/002"),
-        Student(id: "s3", name: "Mike Johnson", matricNumber: "CSC/2021/003"),
-      ],
-    ),
-    Course(
-      id: "course-2",
-      name: "Algorithm Design",
-      code: "CSC 401",
-      level: "400",
-      department: "Computer Science",
-      students: [
-        Student(id: "s4", name: "Alice Brown", matricNumber: "CSC/2021/010"),
-        Student(id: "s5", name: "Bob Wilson", matricNumber: "CSC/2021/011"),
-      ],
-    ),
-  ];
+  CreateClassCubit({
+    required this.getLecturerCoursesUseCase,
+    required this.getCarryoverStudentsUseCase,
+    required this.createClassSessionUseCase,
+  }) : super(const CreateClassState());
 
-  final List<Student> allStudents = [
-    Student(id: "s6", name: "Carol Davis", matricNumber: "CSC/2021/020"),
-    Student(id: "s7", name: "David Miller", matricNumber: "CSC/2021/021"),
-    Student(id: "s8", name: "Eve Taylor", matricNumber: "CSC/2021/022"),
-  ];
+  Future<void> loadInitialData() async {
+    emit(state.copyWith(status: CreateClassStatus.loading));
+
+    try {
+      // Get lecturer courses
+      await _loadLecturerCourses();
+      emit(state.copyWith(status: CreateClassStatus.initial));
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: CreateClassStatus.error,
+          failure: ServerFailure('Failed to load initial data: $e'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _loadLecturerCourses() async {
+    final result = await getLecturerCoursesUseCase();
+
+    result.fold(
+      (failure) {
+        emit(state.copyWith(status: CreateClassStatus.error, failure: failure));
+      },
+      (courses) {
+        emit(
+          state.copyWith(
+            lecturerCourses: courses,
+            status: CreateClassStatus.initial,
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> loadPotentialCarryoverStudents() async {
+    if (state.selectedCourse == null) return;
+
+    emit(state.copyWith(status: CreateClassStatus.loading));
+
+    final result = await getCarryoverStudentsUseCase(
+      departmentId: state.selectedCourse!.department.id,
+      currentLevel: state.selectedCourse!.level,
+    );
+
+    result.fold(
+      (failure) {
+        emit(state.copyWith(status: CreateClassStatus.error, failure: failure));
+      },
+      (students) {
+        emit(
+          state.copyWith(
+            potentialCarryoverStudents: students,
+            filteredCarryoverStudents: students,
+            status: CreateClassStatus.initial,
+          ),
+        );
+      },
+    );
+  }
 
   void nextStep() {
     if (state.currentStep < 3) {
       emit(state.copyWith(currentStep: state.currentStep + 1));
+
+      // Load potential carryover students when moving to step 3
+      if (state.currentStep + 1 == 3) {
+        loadPotentialCarryoverStudents();
+      }
     }
   }
 
@@ -54,10 +101,18 @@ class CreateClassCubit extends Cubit<CreateClassState> {
   }
 
   void updateCourse(String courseId) {
-    final selectedCourse = lecturerCourses.firstWhere(
-      (course) => course.id == courseId,
-      orElse: () => Course.empty(),
-    );
+    CourseEntity? selectedCourse;
+
+    if (courseId.isNotEmpty) {
+      // Find the course with the matching ID
+      for (final course in state.lecturerCourses) {
+        if (course.id == courseId) {
+          selectedCourse = course;
+          break;
+        }
+      }
+    }
+
     emit(state.copyWith(courseId: courseId, selectedCourse: selectedCourse));
   }
 
@@ -82,38 +137,80 @@ class CreateClassCubit extends Cubit<CreateClassState> {
   }
 
   void updateCarryoverSearch(String search) {
-    emit(state.copyWith(carryoverSearch: search));
+    final filtered = state.potentialCarryoverStudents.where((student) {
+      return student.name.toLowerCase().contains(search.toLowerCase()) ||
+          (student.matricNumber?.toLowerCase().contains(search.toLowerCase()) ??
+              false);
+    }).toList();
+    emit(
+      state.copyWith(
+        carryoverSearch: search,
+        filteredCarryoverStudents: filtered,
+      ),
+    );
   }
 
   void addCarryoverStudent(String studentId) {
-    final student = allStudents.firstWhere((s) => s.id == studentId);
+    final student = state.potentialCarryoverStudents.firstWhere(
+      (s) => s.id == studentId,
+    );
     final updatedCarryover = [...state.carryoverStudents, student];
-    emit(state.copyWith(carryoverStudents: updatedCarryover, carryoverSearch: ''));
+    emit(
+      state.copyWith(
+        carryoverStudents: updatedCarryover,
+        carryoverSearch: '',
+        filteredCarryoverStudents: state.potentialCarryoverStudents,
+      ),
+    );
   }
 
   void removeCarryoverStudent(String studentId) {
-    final updatedCarryover = state.carryoverStudents.where((s) => s.id != studentId).toList();
+    final updatedCarryover = state.carryoverStudents
+        .where((s) => s.id != studentId)
+        .toList();
     emit(state.copyWith(carryoverStudents: updatedCarryover));
   }
 
-  void updateSaveAsTemplate(bool saveAsTemplate) {
-    emit(state.copyWith(saveAsTemplate: saveAsTemplate));
-  }
-
   Future<void> createClassSession() async {
-    emit(state.copyWith(status: CreateClassStatus.loading));
-    
-    try {
-      // TODO: Implement API call to create class session
-      await Future.delayed(const Duration(seconds: 2)); // Simulate API call
-      
-      emit(state.copyWith(status: CreateClassStatus.success));
-    } catch (e) {
-      emit(state.copyWith(
-        status: CreateClassStatus.error,
-        failure: ServerFailure(e.toString()),
-      ));
+    if (state.courseId.isEmpty) {
+      emit(
+        state.copyWith(
+          status: CreateClassStatus.error,
+          failure: const ServerFailure('Please select a course'),
+        ),
+      );
+      return;
     }
+
+    emit(state.copyWith(status: CreateClassStatus.loading));
+
+    // Combine course students and carryover students
+    final allStudentIds = [
+      ...state.selectedCourse!.students,
+      ...state.carryoverStudents.map((s) => s.id),
+    ];
+
+    final request = CreateClassRequestModel(
+      courseId: state.courseId,
+      lecturerId: '', // Will be determined by backend from auth token
+      topic: state.topic,
+      date: state.date,
+      startTime: _formatTimeForApi(state.startTime),
+      endTime: _formatTimeForApi(state.endTime),
+      venue: state.venue,
+      studentIds: allStudentIds,
+    );
+
+    final result = await createClassSessionUseCase(request);
+
+    result.fold(
+      (failure) {
+        emit(state.copyWith(status: CreateClassStatus.error, failure: failure));
+      },
+      (response) {
+        emit(state.copyWith(status: CreateClassStatus.success));
+      },
+    );
   }
 
   String _formatTimeOfDay(TimeOfDay time) {
@@ -121,5 +218,25 @@ class CreateClassCubit extends Cubit<CreateClassState> {
     final minute = time.minute.toString().padLeft(2, '0');
     final period = time.period == DayPeriod.am ? 'AM' : 'PM';
     return '$hour:$minute $period';
+  }
+
+  String _formatTimeForApi(String timeString) {
+    // Convert "9:30 AM" to "09:30:00"
+    try {
+      final parts = timeString.split(' ');
+      if (parts.length != 2) return timeString;
+
+      final timeParts = parts[0].split(':');
+      if (timeParts.length != 2) return timeString;
+
+      final hour = int.parse(timeParts[0]);
+      final minute = timeParts[1];
+      final isPM = parts[1].toUpperCase() == 'PM';
+
+      final hour24 = isPM && hour < 12 ? hour + 12 : hour;
+      return '${hour24.toString().padLeft(2, '0')}:$minute:00';
+    } catch (e) {
+      return timeString;
+    }
   }
 }

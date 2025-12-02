@@ -6,15 +6,17 @@ class CreateClassState extends Equatable {
   final int currentStep;
   final CreateClassStatus status;
   final String courseId;
-  final Course? selectedCourse;
+  final CourseEntity? selectedCourse;
   final String topic;
   final String date;
   final String startTime;
   final String endTime;
   final String venue;
   final String carryoverSearch;
-  final List<Student> carryoverStudents;
-  final bool saveAsTemplate;
+  final List<CourseEntity> lecturerCourses;
+  final List<CarryoverStudentModel> potentialCarryoverStudents;
+  final List<CarryoverStudentModel> filteredCarryoverStudents;
+  final List<CarryoverStudentModel> carryoverStudents;
   final Failure? failure;
 
   const CreateClassState({
@@ -28,8 +30,10 @@ class CreateClassState extends Equatable {
     this.endTime = '',
     this.venue = '',
     this.carryoverSearch = '',
+    this.lecturerCourses = const [],
+    this.potentialCarryoverStudents = const [],
+    this.filteredCarryoverStudents = const [],
     this.carryoverStudents = const [],
-    this.saveAsTemplate = false,
     this.failure,
   });
 
@@ -37,15 +41,17 @@ class CreateClassState extends Equatable {
     int? currentStep,
     CreateClassStatus? status,
     String? courseId,
-    Course? selectedCourse,
+    CourseEntity? selectedCourse,
     String? topic,
     String? date,
     String? startTime,
     String? endTime,
     String? venue,
     String? carryoverSearch,
-    List<Student>? carryoverStudents,
-    bool? saveAsTemplate,
+    List<CourseEntity>? lecturerCourses,
+    List<CarryoverStudentModel>? potentialCarryoverStudents,
+    List<CarryoverStudentModel>? filteredCarryoverStudents,
+    List<CarryoverStudentModel>? carryoverStudents,
     Failure? failure,
   }) {
     return CreateClassState(
@@ -59,67 +65,32 @@ class CreateClassState extends Equatable {
       endTime: endTime ?? this.endTime,
       venue: venue ?? this.venue,
       carryoverSearch: carryoverSearch ?? this.carryoverSearch,
+      lecturerCourses: lecturerCourses ?? this.lecturerCourses,
+      potentialCarryoverStudents:
+          potentialCarryoverStudents ?? this.potentialCarryoverStudents,
+      filteredCarryoverStudents:
+          filteredCarryoverStudents ?? this.filteredCarryoverStudents,
       carryoverStudents: carryoverStudents ?? this.carryoverStudents,
-      saveAsTemplate: saveAsTemplate ?? this.saveAsTemplate,
       failure: failure ?? this.failure,
     );
   }
 
   @override
   List<Object?> get props => [
-        currentStep,
-        status,
-        courseId,
-        selectedCourse,
-        topic,
-        date,
-        startTime,
-        endTime,
-        venue,
-        carryoverSearch,
-        carryoverStudents,
-        saveAsTemplate,
-        failure,
-      ];
-}
-
-class Course {
-  final String id;
-  final String name;
-  final String code;
-  final String level;
-  final String department;
-  final List<Student> students;
-
-  const Course({
-    required this.id,
-    required this.name,
-    required this.code,
-    required this.level,
-    required this.department,
-    required this.students,
-  });
-
-  factory Course.empty() {
-    return Course(
-      id: '',
-      name: '',
-      code: '',
-      level: '',
-      department: '',
-      students: const [],
-    );
-  }
-}
-
-class Student {
-  final String id;
-  final String name;
-  final String matricNumber;
-
-  const Student({
-    required this.id,
-    required this.name,
-    required this.matricNumber,
-  });
+    currentStep,
+    status,
+    courseId,
+    selectedCourse,
+    topic,
+    date,
+    startTime,
+    endTime,
+    venue,
+    carryoverSearch,
+    lecturerCourses,
+    potentialCarryoverStudents,
+    filteredCarryoverStudents,
+    carryoverStudents,
+    failure,
+  ];
 }

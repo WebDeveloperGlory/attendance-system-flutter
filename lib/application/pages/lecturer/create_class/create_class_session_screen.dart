@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:smart_attendance_system/application/pages/lecturer/create_class/cubit/create_class_cubit.dart';
 import 'package:smart_attendance_system/injection_container.dart';
 
@@ -9,7 +10,7 @@ class CreateClassSessionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => getIt<CreateClassCubit>(),
+      create: (context) => getIt<CreateClassCubit>()..loadInitialData(),
       child: const _CreateClassSessionContent(),
     );
   }
@@ -22,24 +23,33 @@ class _CreateClassSessionContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocConsumer<CreateClassCubit, CreateClassState>(
       listener: (context, state) {
-        // if (state is CreateClassSuccess) {
-        //   ScaffoldMessenger.of(context).showSnackBar(
-        //     const SnackBar(
-        //       content: Text('Class session created successfully!'),
-        //       backgroundColor: Colors.green,
-        //     ),
-        //   );
-        //   Navigator.of(context).pop();
-        // }
+        if (state.status == CreateClassStatus.success) {
+          // Show success message
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Class session created successfully!'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
 
-        // if (state is CreateClassError) {
-        //   ScaffoldMessenger.of(context).showSnackBar(
-        //     SnackBar(
-        //       content: Text(state.failure.message),
-        //       backgroundColor: Colors.red,
-        //     ),
-        //   );
-        // }
+          // Use Future.delayed to avoid navigation issues
+          Future.delayed(const Duration(milliseconds: 500), () {
+            // Use context.go instead of Navigator.pop for GoRouter
+            if (context.mounted) {
+              context.go('/lecturer/dashboard');
+            }
+          });
+        }
+
+        if (state.status == CreateClassStatus.error) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.failure?.message ?? 'An error occurred'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       },
       builder: (context, state) {
         return Scaffold(
@@ -50,9 +60,7 @@ class _CreateClassSessionContent extends StatelessWidget {
                 // Header
                 _buildHeader(context),
                 // Content
-                Expanded(
-                  child: _buildContent(context, state),
-                ),
+                Expanded(child: _buildContent(context, state)),
                 // Bottom Navigation
                 _buildBottomNavigation(context, state),
               ],
@@ -67,11 +75,7 @@ class _CreateClassSessionContent extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(
-          bottom: BorderSide(
-            color: Colors.grey.shade200,
-          ),
-        ),
+        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -130,6 +134,10 @@ class _CreateClassSessionContent extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context, CreateClassState state) {
+    if (state.status == CreateClassStatus.loading && state.currentStep == 1) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -157,10 +165,7 @@ class _CreateClassSessionContent extends StatelessWidget {
           children: [
             const Text(
               "Progress",
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey),
             ),
             Text(
               "${progress.round()}%",
@@ -296,7 +301,7 @@ class _CreateClassSessionContent extends StatelessWidget {
                             style: TextStyle(color: Colors.grey),
                           ),
                         ),
-                        ...cubit.lecturerCourses.map((course) {
+                        ...state.lecturerCourses.map((course) {
                           return DropdownMenuItem(
                             value: course.id,
                             child: Text(
@@ -341,13 +346,10 @@ class _CreateClassSessionContent extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          const Text(
-                            "•",
-                            style: TextStyle(color: Colors.grey),
-                          ),
+                          const Text("•", style: TextStyle(color: Colors.grey)),
                           const SizedBox(width: 8),
                           Text(
-                            state.selectedCourse!.department,
+                            state.selectedCourse!.department.name,
                             style: const TextStyle(
                               fontSize: 14,
                               color: Colors.grey,
@@ -423,7 +425,10 @@ class _CreateClassSessionContent extends StatelessWidget {
                         borderRadius: BorderRadius.all(Radius.circular(12)),
                         borderSide: BorderSide(color: Colors.grey),
                       ),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                     ),
                   ),
                 ],
@@ -509,7 +514,9 @@ class _CreateClassSessionContent extends StatelessWidget {
                             hintText: "Select date",
                             hintStyle: TextStyle(color: Colors.grey),
                             border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(horizontal: 16),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                            ),
                             suffixIcon: Icon(Icons.calendar_today),
                           ),
                         ),
@@ -540,7 +547,9 @@ class _CreateClassSessionContent extends StatelessWidget {
                                 border: Border.all(color: Colors.grey.shade200),
                               ),
                               child: TextField(
-                                controller: TextEditingController(text: state.startTime),
+                                controller: TextEditingController(
+                                  text: state.startTime,
+                                ),
                                 readOnly: true,
                                 onTap: () async {
                                   final selectedTime = await showTimePicker(
@@ -555,7 +564,9 @@ class _CreateClassSessionContent extends StatelessWidget {
                                   hintText: "Start time",
                                   hintStyle: TextStyle(color: Colors.grey),
                                   border: InputBorder.none,
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 16),
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
                                   suffixIcon: Icon(Icons.access_time),
                                 ),
                               ),
@@ -584,7 +595,9 @@ class _CreateClassSessionContent extends StatelessWidget {
                                 border: Border.all(color: Colors.grey.shade200),
                               ),
                               child: TextField(
-                                controller: TextEditingController(text: state.endTime),
+                                controller: TextEditingController(
+                                  text: state.endTime,
+                                ),
                                 readOnly: true,
                                 onTap: () async {
                                   final selectedTime = await showTimePicker(
@@ -599,7 +612,9 @@ class _CreateClassSessionContent extends StatelessWidget {
                                   hintText: "End time",
                                   hintStyle: TextStyle(color: Colors.grey),
                                   border: InputBorder.none,
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 16),
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
                                   suffixIcon: Icon(Icons.access_time),
                                 ),
                               ),
@@ -642,7 +657,10 @@ class _CreateClassSessionContent extends StatelessWidget {
                             borderRadius: BorderRadius.all(Radius.circular(12)),
                             borderSide: BorderSide(color: Colors.grey),
                           ),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                         ),
                       ),
                     ],
@@ -743,8 +761,9 @@ class _CreateClassSessionContent extends StatelessWidget {
 
   Widget _buildStep3(BuildContext context, CreateClassState state) {
     final cubit = context.read<CreateClassCubit>();
-    final courseStudents = state.selectedCourse?.students ?? [];
-    final totalStudents = courseStudents.length + state.carryoverStudents.length;
+    final totalStudents =
+        (state.selectedCourse?.students.length ?? 0) +
+        state.carryoverStudents.length;
 
     return Column(
       children: [
@@ -761,11 +780,7 @@ class _CreateClassSessionContent extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Icon(
-                    Icons.people,
-                    size: 20,
-                    color: Color(0xFF2563EB),
-                  ),
+                  const Icon(Icons.people, size: 20, color: Color(0xFF2563EB)),
                   const SizedBox(width: 8),
                   const Text(
                     "Course Students",
@@ -779,63 +794,62 @@ class _CreateClassSessionContent extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                "${courseStudents.length} students enrolled in ${state.selectedCourse?.code}",
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
-                ),
+                "${state.selectedCourse?.students.length ?? 0} students enrolled in ${state.selectedCourse?.code}",
+                style: const TextStyle(fontSize: 14, color: Colors.grey),
               ),
               const SizedBox(height: 16),
-              Container(
-                height: 256,
-                child: ListView.builder(
-                  itemCount: courseStudents.length,
-                  itemBuilder: (context, index) {
-                    final student = courseStudents[index];
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFDCFCE7),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFBBF7D0)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.check_circle,
-                            size: 20,
-                            color: Color(0xFF16A34A),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  student.name,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black,
-                                  ),
-                                ),
-                                Text(
-                                  student.matricNumber,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ],
+              if (state.status == CreateClassStatus.loading)
+                const Center(child: CircularProgressIndicator())
+              else
+                Container(
+                  height: 256,
+                  child: ListView.builder(
+                    itemCount: state.selectedCourse?.students.length ?? 0,
+                    itemBuilder: (context, index) {
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFDCFCE7),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFBBF7D0)),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(
+                              Icons.check_circle,
+                              size: 20,
+                              color: Color(0xFF16A34A),
                             ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Student enrolled in course",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  Text(
+                                    "Will be automatically included",
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
             ],
           ),
         ),
@@ -872,10 +886,7 @@ class _CreateClassSessionContent extends StatelessWidget {
               const SizedBox(height: 8),
               const Text(
                 "Optional: Add students from other levels taking this course",
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey,
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey),
               ),
               const SizedBox(height: 16),
               // Search and Add Carryover
@@ -888,6 +899,9 @@ class _CreateClassSessionContent extends StatelessWidget {
                       border: Border.all(color: Colors.grey.shade200),
                     ),
                     child: TextField(
+                      controller: TextEditingController(
+                        text: state.carryoverSearch,
+                      ),
                       onChanged: (value) => cubit.updateCarryoverSearch(value),
                       decoration: const InputDecoration(
                         hintText: "Search students...",
@@ -900,7 +914,83 @@ class _CreateClassSessionContent extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   // Carryover Students List
+                  if (state.filteredCarryoverStudents.isNotEmpty)
+                    Container(
+                      height: 200,
+                      child: ListView.builder(
+                        itemCount: state.filteredCarryoverStudents.length,
+                        itemBuilder: (context, index) {
+                          final student =
+                              state.filteredCarryoverStudents[index];
+                          final isAdded = state.carryoverStudents.any(
+                            (s) => s.id == student.id,
+                          );
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: isAdded
+                                  ? const Color(0xFFDCFCE7)
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isAdded
+                                    ? const Color(0xFFBBF7D0)
+                                    : Colors.grey.shade200,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        student.name,
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                      Text(
+                                        student.matricNumber ??
+                                            'No matric number',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                      Text(
+                                        "Level ${student.level ?? 'N/A'} • ${student.department?.name ?? 'No department'}",
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (!isAdded)
+                                  IconButton(
+                                    onPressed: () =>
+                                        cubit.addCarryoverStudent(student.id),
+                                    icon: const Icon(
+                                      Icons.add_circle,
+                                      size: 20,
+                                      color: Color(0xFF2563EB),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                   if (state.carryoverStudents.isNotEmpty) ...[
+                    const SizedBox(height: 16),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -920,13 +1010,16 @@ class _CreateClassSessionContent extends StatelessWidget {
                             decoration: BoxDecoration(
                               color: const Color(0xFFDBEAFE),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFFBFDBFE)),
+                              border: Border.all(
+                                color: const Color(0xFFBFDBFE),
+                              ),
                             ),
                             child: Row(
                               children: [
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         student.name,
@@ -937,7 +1030,8 @@ class _CreateClassSessionContent extends StatelessWidget {
                                         ),
                                       ),
                                       Text(
-                                        student.matricNumber,
+                                        student.matricNumber ??
+                                            'No matric number',
                                         style: const TextStyle(
                                           fontSize: 12,
                                           color: Colors.grey,
@@ -947,7 +1041,8 @@ class _CreateClassSessionContent extends StatelessWidget {
                                   ),
                                 ),
                                 IconButton(
-                                  onPressed: () => cubit.removeCarryoverStudent(student.id),
+                                  onPressed: () =>
+                                      cubit.removeCarryoverStudent(student.id),
                                   icon: const Icon(
                                     Icons.delete,
                                     size: 20,
@@ -997,49 +1092,6 @@ class _CreateClassSessionContent extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 16),
-        // Template Option
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade200),
-          ),
-          child: Row(
-            children: [
-              Checkbox(
-                value: state.saveAsTemplate,
-                onChanged: (value) => cubit.updateSaveAsTemplate(value ?? false),
-                activeColor: const Color(0xFF2563EB),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Save as template",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      "Reuse this configuration for recurring classes",
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }
@@ -1049,23 +1101,25 @@ class _CreateClassSessionContent extends StatelessWidget {
     final canProceed = state.currentStep == 1
         ? state.courseId.isNotEmpty && state.topic.isNotEmpty
         : state.currentStep == 2
-            ? state.date.isNotEmpty && state.startTime.isNotEmpty && state.endTime.isNotEmpty
-            : true;
+        ? state.date.isNotEmpty &&
+              state.startTime.isNotEmpty &&
+              state.endTime.isNotEmpty
+        : true;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(
-          top: BorderSide(color: Colors.grey.shade200),
-        ),
+        border: Border(top: BorderSide(color: Colors.grey.shade200)),
       ),
       child: Row(
         children: [
           if (state.currentStep > 1) ...[
             Expanded(
               child: ElevatedButton(
-                onPressed: () => cubit.previousStep(),
+                onPressed: state.status == CreateClassStatus.loading
+                    ? null
+                    : () => cubit.previousStep(),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: Colors.black,
@@ -1083,15 +1137,16 @@ class _CreateClassSessionContent extends StatelessWidget {
           ],
           Expanded(
             child: ElevatedButton(
-              onPressed: canProceed
-                  ? () {
+              onPressed:
+                  state.status == CreateClassStatus.loading || !canProceed
+                  ? null
+                  : () {
                       if (state.currentStep < 3) {
                         cubit.nextStep();
                       } else {
                         cubit.createClassSession();
                       }
-                    }
-                  : null,
+                    },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2563EB),
                 foregroundColor: Colors.white,
@@ -1101,22 +1156,31 @@ class _CreateClassSessionContent extends StatelessWidget {
                 ),
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (state.currentStep == 3)
-                    const Icon(Icons.check_circle, size: 16),
-                  if (state.currentStep == 3) const SizedBox(width: 8),
-                  Text(
-                    state.currentStep < 3 ? "Next" : "Create Session",
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  if (state.currentStep < 3) ...[
-                    const SizedBox(width: 8),
-                    const Icon(Icons.chevron_right, size: 16),
-                  ],
-                ],
-              ),
+              child: state.status == CreateClassStatus.loading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(Colors.white),
+                      ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (state.currentStep == 3)
+                          const Icon(Icons.check_circle, size: 16),
+                        if (state.currentStep == 3) const SizedBox(width: 8),
+                        Text(
+                          state.currentStep < 3 ? "Next" : "Create Session",
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        if (state.currentStep < 3) ...[
+                          const SizedBox(width: 8),
+                          const Icon(Icons.chevron_right, size: 16),
+                        ],
+                      ],
+                    ),
             ),
           ),
         ],
@@ -1134,12 +1198,33 @@ class _CreateClassSessionContent extends StatelessWidget {
   }
 
   String _getWeekday(int weekday) {
-    const weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    const weekdays = [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
+    ];
     return weekdays[weekday - 1];
   }
 
   String _getMonth(int month) {
-    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const months = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
     return months[month - 1];
   }
 }

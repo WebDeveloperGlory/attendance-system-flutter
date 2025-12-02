@@ -44,11 +44,13 @@ class AppConfig {
   static const String createCourseEndpoint = courseEndpoint;
   static String getCourseDetailsEndpoint(String id) => '$courseEndpoint/$id';
   static String registerStudentsToCourseEndpoint(String id) => '$courseEndpoint/$id/register/students';
+  static String getPotentialCarryoverEndpoint(String id, String level) => '$courseEndpoint/potential-carryover?departmentId=$id&currentLevel=$level';
   // End of Course Endpoints //
   
   // Lecturer Endpoints //
   static const String getLecturersEndpoint = lecturerEndpoint;
   static const String getLecturerDashboardEndpoint = '$lecturerEndpoint/dashboard';
+  static const String getLecturerCourseEndpoint = '$lecturerEndpoint/course';
   static const String getAttendanceRecordsSummaryEndpoint = '$lecturerEndpoint/attendance/records';
   static String deleteLecturerEndpoint(String id) => '$lecturerEndpoint/$id';
   // End of Lecturer Endpoints //
