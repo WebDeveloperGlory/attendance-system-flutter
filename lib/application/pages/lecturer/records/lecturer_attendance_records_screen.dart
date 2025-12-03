@@ -11,7 +11,8 @@ class LecturerAttendanceRecordsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => getIt<AttendanceRecordsCubit>()..loadAttendanceRecords(),
+      create: (context) =>
+          getIt<AttendanceRecordsCubit>()..loadAttendanceRecords(),
       child: const _LecturerAttendanceRecordsContent(),
     );
   }
@@ -42,9 +43,7 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
                 // Header
                 _buildHeader(context),
                 // Content
-                Expanded(
-                  child: _buildContent(context, state),
-                ),
+                Expanded(child: _buildContent(context, state)),
               ],
             ),
           ),
@@ -61,9 +60,7 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         border: Border(
-          bottom: BorderSide(
-            color: colorScheme.outline.withValues(alpha: 0.3),
-          ),
+          bottom: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
         ),
       ),
       child: Padding(
@@ -137,9 +134,27 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
     return const Center(child: CircularProgressIndicator());
   }
 
-  Widget _buildRecordsList(BuildContext context, AttendanceSummaryEntity summary) {
+  Widget _buildRecordsList(
+    BuildContext context,
+    AttendanceSummaryEntity summary,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+
+    CourseAttendanceEntity? _findCourseForSession(
+      AttendanceSummaryEntity summary,
+      ClassSessionEntity session,
+    ) {
+      for (final course in summary.courses) {
+        // Check if any session in this course matches
+        for (final courseSession in course.sessions) {
+          if (courseSession.id == session.id) {
+            return course;
+          }
+        }
+      }
+      return null;
+    }
 
     // Flatten all sessions from all courses
     final allSessions = <ClassSessionEntity>[];
@@ -245,10 +260,7 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
               ? _buildEmptyState(context)
               : Column(
                   children: allSessions.map((session) {
-                    final course = summary.courses.firstWhere(
-                      (course) => course.sessions.contains(session),
-                      orElse: () => summary.courses.first,
-                    );
+                    final course = _findCourseForSession(summary, session);
                     return _buildRecordCard(context, session, course);
                   }).toList(),
                 ),
@@ -257,7 +269,10 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
     );
   }
 
-  Widget _buildCourseFilter(BuildContext context, List<CourseAttendanceEntity> courses) {
+  Widget _buildCourseFilter(
+    BuildContext context,
+    List<CourseAttendanceEntity> courses,
+  ) {
     // final colorScheme = Theme.of(context).colorScheme;
     // final textTheme = Theme.of(context).textTheme;
 
@@ -292,7 +307,15 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
     );
   }
 
-  Widget _buildRecordCard(BuildContext context, ClassSessionEntity session, CourseAttendanceEntity course) {
+  Widget _buildRecordCard(
+    BuildContext context,
+    ClassSessionEntity session,
+    CourseAttendanceEntity? course,
+  ) {
+    // If no course found, show a simplified card
+    if (course == null) {
+      return _buildSimplifiedRecordCard(context, session);
+    }
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final percentage = session.attendanceRate.round();
@@ -302,9 +325,7 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -318,7 +339,9 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
-            context.read<AttendanceRecordsCubit>().loadClassAttendance(session.id);
+            context.read<AttendanceRecordsCubit>().loadClassAttendance(
+              session.id,
+            );
           },
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -337,9 +360,14 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
                             runSpacing: 8,
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: colorScheme.primary.withValues(alpha: 0.1),
+                                  color: colorScheme.primary.withValues(
+                                    alpha: 0.1,
+                                  ),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
@@ -351,7 +379,10 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
                                 ),
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
                                 decoration: BoxDecoration(
                                   color: colorScheme.surfaceContainerHighest,
                                   borderRadius: BorderRadius.circular(8),
@@ -480,7 +511,98 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
     );
   }
 
-  Widget _buildClassDetails(BuildContext context, AttendanceRecordsClassDetailsLoaded state) {
+  Widget _buildSimplifiedRecordCard(
+    BuildContext context,
+    ClassSessionEntity session,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final percentage = session.attendanceRate.round();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            context.read<AttendanceRecordsCubit>().loadClassAttendance(
+              session.id,
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            session.topic.isNotEmpty
+                                ? session.topic
+                                : "Class Session",
+                            style: textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _formatDate(session.date),
+                            style: textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right,
+                      size: 20,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Attendance: $percentage%",
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    Text(
+                      "${session.present} present, ${session.absent} absent",
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildClassDetails(
+    BuildContext context,
+    AttendanceRecordsClassDetailsLoaded state,
+  ) {
     return Column(
       children: [
         // Back Button
@@ -490,7 +612,9 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
             color: Theme.of(context).colorScheme.surface,
             border: Border(
               bottom: BorderSide(
-                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                color: Theme.of(
+                  context,
+                ).colorScheme.outline.withValues(alpha: 0.3),
               ),
             ),
           ),
@@ -536,9 +660,16 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
     );
   }
 
-  Widget _buildClassAttendanceDetails(BuildContext context, ClassAttendanceDetailEntity classAttendance) {
-    final presentCount = classAttendance.attendance.where((a) => a.status.toLowerCase() == 'present').length;
-    final absentCount = classAttendance.attendance.where((a) => a.status.toLowerCase() == 'absent').length;
+  Widget _buildClassAttendanceDetails(
+    BuildContext context,
+    ClassAttendanceDetailEntity classAttendance,
+  ) {
+    final presentCount = classAttendance.attendance
+        .where((a) => a.status.toLowerCase() == 'present')
+        .length;
+    final absentCount = classAttendance.attendance
+        .where((a) => a.status.toLowerCase() == 'absent')
+        .length;
     final totalStudents = classAttendance.attendance.length;
 
     return SingleChildScrollView(
@@ -587,7 +718,9 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -630,7 +763,10 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
     );
   }
 
-  Widget _buildStudentRecords(BuildContext context, List<StudentAttendanceEntity> records) {
+  Widget _buildStudentRecords(
+    BuildContext context,
+    List<StudentAttendanceEntity> records,
+  ) {
     if (records.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(32),
@@ -643,7 +779,9 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
             Icon(
               Icons.warning_amber,
               size: 32,
-              color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 8),
             Text(
@@ -677,7 +815,10 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
     );
   }
 
-  Widget _buildStudentRecordCard(BuildContext context, StudentAttendanceEntity student) {
+  Widget _buildStudentRecordCard(
+    BuildContext context,
+    StudentAttendanceEntity student,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -687,17 +828,19 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.1),
-        ),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
-            student.status.toLowerCase() == "present" ? Icons.check_circle : Icons.cancel,
+            student.status.toLowerCase() == "present"
+                ? Icons.check_circle
+                : Icons.cancel,
             size: 20,
-            color: student.status.toLowerCase() == "present" ? Colors.green : Colors.red,
+            color: student.status.toLowerCase() == "present"
+                ? Colors.green
+                : Colors.red,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -744,7 +887,10 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
             children: [
               if (student.verifiedByFingerprint)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.green.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -754,11 +900,7 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.fingerprint,
-                        size: 12,
-                        color: Colors.green,
-                      ),
+                      Icon(Icons.fingerprint, size: 12, color: Colors.green),
                       const SizedBox(width: 4),
                       Text(
                         "Verified",
@@ -774,20 +916,24 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: student.status.toLowerCase() == "present" 
+                  color: student.status.toLowerCase() == "present"
                       ? Colors.green.withValues(alpha: 0.1)
                       : Colors.red.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: student.status.toLowerCase() == "present" 
+                    color: student.status.toLowerCase() == "present"
                         ? Colors.green.withValues(alpha: 0.3)
                         : Colors.red.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Text(
-                  student.status.toLowerCase() == "present" ? "Present" : "Absent",
+                  student.status.toLowerCase() == "present"
+                      ? "Present"
+                      : "Absent",
                   style: textTheme.labelSmall?.copyWith(
-                    color: student.status.toLowerCase() == "present" ? Colors.green : Colors.red,
+                    color: student.status.toLowerCase() == "present"
+                        ? Colors.green
+                        : Colors.red,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -835,9 +981,7 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -869,7 +1013,9 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: isActive ? colorScheme.primary : colorScheme.surfaceContainerHighest,
+        color: isActive
+            ? colorScheme.primary
+            : colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
         boxShadow: isActive
             ? [
@@ -891,7 +1037,9 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
             child: Text(
               label,
               style: textTheme.labelMedium?.copyWith(
-                color: isActive ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
+                color: isActive
+                    ? colorScheme.onPrimary
+                    : colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -912,9 +1060,7 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -928,9 +1074,9 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
           ),
           Text(
             label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: color,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.labelSmall?.copyWith(color: color),
           ),
         ],
       ),
@@ -949,7 +1095,20 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
   }
 
   String _getMonthAbbreviation(int month) {
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
     return months[month - 1];
   }
 

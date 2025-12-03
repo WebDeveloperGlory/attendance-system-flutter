@@ -16,24 +16,28 @@ class AttendanceSummaryEntity extends Equatable {
 }
 
 class CourseAttendanceEntity extends Equatable {
+  final String courseId;
   final String courseName;
   final String courseCode;
   final List<ClassSessionEntity> sessions;
 
   const CourseAttendanceEntity({
+    required this.courseId,
     required this.courseName,
     required this.courseCode,
     required this.sessions,
   });
 
   @override
-  List<Object?> get props => [courseName, courseCode, sessions];
+  List<Object?> get props => [courseId, courseName, courseCode, sessions];
 }
 
 class ClassSessionEntity extends Equatable {
   final String id;
   final String topic;
   final DateTime date;
+  final DateTime startTime;
+  final DateTime endTime;
   final double attendanceRate;
   final int present;
   final int absent;
@@ -43,6 +47,8 @@ class ClassSessionEntity extends Equatable {
     required this.id,
     required this.topic,
     required this.date,
+    required this.startTime,
+    required this.endTime,
     required this.attendanceRate,
     required this.present,
     required this.absent,
@@ -54,6 +60,8 @@ class ClassSessionEntity extends Equatable {
     id,
     topic,
     date,
+    startTime,
+    endTime,
     attendanceRate,
     present,
     absent,
