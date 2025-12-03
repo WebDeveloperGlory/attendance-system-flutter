@@ -35,9 +35,8 @@ class _CreateClassSessionContent extends StatelessWidget {
 
           // Use Future.delayed to avoid navigation issues
           Future.delayed(const Duration(milliseconds: 500), () {
-            // Use context.go instead of Navigator.pop for GoRouter
             if (context.mounted) {
-              context.go('/lecturer/dashboard');
+              context.push('/lecturer/dashboard');
             }
           });
         }
@@ -90,7 +89,7 @@ class _CreateClassSessionContent extends StatelessWidget {
                 color: Colors.white,
               ),
               child: IconButton(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () => context.pop(),
                 icon: const Icon(
                   Icons.arrow_back,
                   size: 20,
