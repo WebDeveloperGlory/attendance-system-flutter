@@ -1,7 +1,7 @@
 class AppConfig {
   // Base URL //
-  static const String baseUrl = 'http://localhost:5000/api/v1'; // LOCAL
-  // static const String baseUrl = 'https://attendance-system-g8qd.onrender.com/api/v1'; // PROD
+  // static const String baseUrl = 'http://localhost:5000/api/v1'; // LOCAL
+  static const String baseUrl = 'https://attendance-system-g8qd.onrender.com/api/v1'; // PROD
   static const String authEndpoint = '/auth';
   static const String adminEndpoint = '/admin';
   static const String fndEndpoint = '/fnd';
