@@ -18,6 +18,7 @@ import 'package:smart_attendance_system/data/datasources/class_remote_datasource
 import 'package:smart_attendance_system/data/datasources/class_session_remote_datasource.dart';
 import 'package:smart_attendance_system/data/datasources/course_remote_datasource.dart';
 import 'package:smart_attendance_system/data/datasources/fnd_remote_datasource.dart';
+import 'package:smart_attendance_system/data/datasources/lecturer_course_details_remote_datasource.dart';
 import 'package:smart_attendance_system/data/datasources/lecturer_remote_datasource.dart';
 import 'package:smart_attendance_system/data/datasources/student_remote_datasource.dart';
 import 'package:smart_attendance_system/data/repositories/admin_repo_impl.dart';
@@ -27,6 +28,7 @@ import 'package:smart_attendance_system/data/repositories/class_repo_impl.dart';
 import 'package:smart_attendance_system/data/repositories/class_session_repo_impl.dart';
 import 'package:smart_attendance_system/data/repositories/course_repo_impl.dart';
 import 'package:smart_attendance_system/data/repositories/fnd_repo_impl.dart';
+import 'package:smart_attendance_system/data/repositories/lecturer_course_details_repo_impl.dart';
 import 'package:smart_attendance_system/data/repositories/lecturer_repo_impl.dart';
 import 'package:smart_attendance_system/data/repositories/student_repo_impl.dart';
 import 'package:smart_attendance_system/domain/repositories/admin_repo.dart';
@@ -35,11 +37,13 @@ import 'package:smart_attendance_system/domain/repositories/class_repo.dart';
 import 'package:smart_attendance_system/domain/repositories/class_session_repo.dart';
 import 'package:smart_attendance_system/domain/repositories/course_repo.dart';
 import 'package:smart_attendance_system/domain/repositories/fnd_repo.dart';
+import 'package:smart_attendance_system/domain/repositories/lecturer_course_details_repo.dart';
 import 'package:smart_attendance_system/domain/repositories/lecturer_repo.dart';
 import 'package:smart_attendance_system/domain/repositories/student_repo.dart';
 import 'package:smart_attendance_system/domain/usecases/create_class_session_usecase.dart';
 import 'package:smart_attendance_system/domain/usecases/get_carryover_students_usecase.dart';
 import 'package:smart_attendance_system/domain/usecases/get_class_session_usecase.dart';
+import 'package:smart_attendance_system/domain/usecases/get_lecturer_course_details_usecase.dart';
 import 'package:smart_attendance_system/domain/usecases/get_lecturer_courses_usecase.dart';
 import 'package:smart_attendance_system/domain/usecases/login_usecase.dart';
 import 'package:smart_attendance_system/domain/usecases/update_attendance_status_usecase.dart';
@@ -91,6 +95,9 @@ void init() {
   getIt.registerFactory(
     () => UpdateAttendanceStatusUseCase(repository: getIt()),
   );
+  getIt.registerFactory(
+    () => GetLecturerCourseDetailsUseCase(repository: getIt()),
+  );
 
   // Repositories
   getIt.registerLazySingleton<AuthRepositoryImpl>(
@@ -120,6 +127,9 @@ void init() {
   getIt.registerLazySingleton<ClassSessionRepo>(
     () => ClassSessionRepoImpl(remoteDataSource: getIt()),
   );
+  getIt.registerLazySingleton<LecturerCourseDetailsRepo>(
+    () => LecturerCourseDetailsRepoImpl(remoteDataSource: getIt()),
+  );
 
   // Data sources
   getIt.registerLazySingleton<RemoteDataSource>(
@@ -148,6 +158,9 @@ void init() {
   );
   getIt.registerLazySingleton<ClassSessionRemoteDataSource>(
     () => ClassSessionRemoteDataSourceImpl(dioClient: getIt()),
+  );
+  getIt.registerLazySingleton<LecturerCourseDetailsRemoteDataSource>(
+    () => LecturerCourseDetailsRemoteDataSourceImpl(dioClient: getIt()),
   );
 
   // External

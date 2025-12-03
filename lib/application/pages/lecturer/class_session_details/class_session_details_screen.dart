@@ -177,8 +177,12 @@ class _ClassSessionDetailsContent extends StatelessWidget {
                     // Class Info Card
                     _buildClassInfoCard(classSession),
 
+                    SizedBox(height: 16),
+
                     // Attendance Stats
                     _buildAttendanceStats(classSession.stats),
+
+                    SizedBox(height: 16),
 
                     // Attendance Rate Card
                     _buildAttendanceRateCard(
@@ -186,11 +190,15 @@ class _ClassSessionDetailsContent extends StatelessWidget {
                       state.fingerprintVerifiedCount,
                     ),
 
+                    SizedBox(height: 16),
+
                     // Attendance Session Control
                     _buildAttendanceSessionControl(
                       cubit,
                       state.isAttendanceActive,
                     ),
+
+                    SizedBox(height: 16),
 
                     // Student List
                     _buildStudentList(cubit, state),
@@ -228,7 +236,7 @@ class _ClassSessionDetailsContent extends StatelessWidget {
                 color: Colors.white,
               ),
               child: IconButton(
-                onPressed: () => context.go('/lecturer/dashboard'),
+                onPressed: () => context.pop(),
                 icon: const Icon(
                   Icons.arrow_back,
                   size: 20,

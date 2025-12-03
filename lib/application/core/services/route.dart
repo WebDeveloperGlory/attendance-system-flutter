@@ -16,6 +16,7 @@ import 'package:smart_attendance_system/application/pages/auth/cubit/auth_state_
 import 'package:smart_attendance_system/application/pages/auth/lecturer_login_screen.dart';
 import 'package:smart_attendance_system/application/pages/auth/user_type_selection_screen.dart';
 import 'package:smart_attendance_system/application/pages/lecturer/class_session_details/class_session_details_screen.dart';
+import 'package:smart_attendance_system/application/pages/lecturer/course_details/lecturer_course_details_screen.dart';
 import 'package:smart_attendance_system/application/pages/lecturer/create_class/create_class_session_screen.dart';
 import 'package:smart_attendance_system/application/pages/lecturer/dashboard/lecturer_dashboard_screen.dart';
 import 'package:smart_attendance_system/application/pages/lecturer/lecturer_shell.dart';
@@ -115,6 +116,13 @@ GoRouter routes(BuildContext context) {
             builder: (context, state) {
               final classId = state.pathParameters['classId']!;
               return ClassSessionDetailsScreen(classId: classId);
+            },
+          ),
+          GoRoute(
+            path: '/lecturer/course/:courseId',
+            builder: (context, state) {
+              final courseId = state.pathParameters['courseId']!;
+              return LecturerCourseDetailsScreen(courseId: courseId);
             },
           ),
         ],

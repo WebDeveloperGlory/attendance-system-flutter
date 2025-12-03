@@ -201,7 +201,7 @@ class LecturerDashboardScreen extends StatelessWidget {
                     child: InkWell(
                       borderRadius: BorderRadius.circular(16),
                       onTap: () {
-                        context.go('/lecturer/create-class');
+                        context.push('/lecturer/create-class');
                       },
                       child: Container(
                         height: 56,
@@ -403,7 +403,7 @@ class LecturerDashboardScreen extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(16),
       onTap: () {
-        context.go('/lecturer/class/${session.upcomingClass.id}');
+        context.push('/lecturer/class/${session.upcomingClass.id}');
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -581,9 +581,6 @@ class LecturerDashboardScreen extends StatelessWidget {
                     color: Colors.transparent,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(12),
-                      onTap: () {
-                        // TODO: Implement start attendance
-                      },
                       child: Container(
                         height: 44,
                         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -728,7 +725,7 @@ class LecturerDashboardScreen extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -811,7 +808,7 @@ class LecturerDashboardScreen extends StatelessWidget {
             const SizedBox(height: 12),
             OutlinedButton(
               onPressed: () {
-                // TODO: Implement view course details
+                context.push('/lecturer/course/${course.id}');
               },
               style: OutlinedButton.styleFrom(
                 foregroundColor: colorScheme.onSurface,
@@ -840,14 +837,14 @@ class LecturerDashboardScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.3)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
           Icon(
             Icons.calendar_today,
             size: 48,
-            color: colorScheme.onSurface.withOpacity(0.3),
+            color: colorScheme.onSurface.withValues(alpha: 0.3),
           ),
           const SizedBox(height: 12),
           Text(
@@ -879,14 +876,14 @@ class LecturerDashboardScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.3)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
           Icon(
             Icons.menu_book,
             size: 48,
-            color: colorScheme.onSurface.withOpacity(0.3),
+            color: colorScheme.onSurface.withValues(alpha: 0.3),
           ),
           const SizedBox(height: 16),
           Text(
@@ -931,7 +928,7 @@ class LecturerDashboardScreen extends StatelessWidget {
             failure.message,
             style: TextStyle(
               fontSize: 14,
-              color: theme.colorScheme.onSurface.withOpacity(0.6),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             ),
             textAlign: TextAlign.center,
           ),
