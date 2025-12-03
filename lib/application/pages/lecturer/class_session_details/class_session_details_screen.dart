@@ -28,51 +28,51 @@ class _ClassSessionDetailsContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return BlocConsumer<ClassSessionCubit, ClassSessionState>(
       listener: (context, state) {
         if (state.status == ClassSessionStatus.error) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.failure?.message ?? 'An error occurred'),
-              backgroundColor: Colors.red,
+              backgroundColor: theme.colorScheme.error,
             ),
           );
         }
       },
       builder: (context, state) {
         if (state.status == ClassSessionStatus.loading) {
-          return _buildLoadingState();
+          return _buildLoadingState(theme);
         }
 
         if (state.status == ClassSessionStatus.error &&
             state.classSession == null) {
-          return _buildErrorState(context);
+          return _buildErrorState(context, theme);
         }
 
         if (state.classSession == null) {
-          return _buildEmptyState();
+          return _buildEmptyState(theme);
         }
 
-        return _buildContent(context, state);
+        return _buildContent(context, state, theme);
       },
     );
   }
 
-  Widget _buildLoadingState() {
+  Widget _buildLoadingState(ThemeData theme) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.colorScheme.surface,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const CircularProgressIndicator(),
+            CircularProgressIndicator(color: theme.colorScheme.primary),
             const SizedBox(height: 16),
             Text(
               'Loading class session...',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[600],
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -81,27 +81,29 @@ class _ClassSessionDetailsContent extends StatelessWidget {
     );
   }
 
-  Widget _buildErrorState(BuildContext context) {
+  Widget _buildErrorState(BuildContext context, ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surface,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.red[400]),
+            Icon(Icons.error_outline, size: 64, color: colorScheme.error),
             const SizedBox(height: 16),
             Text(
               'Failed to load class session',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[800],
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Please check your connection and try again',
-              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -109,8 +111,8 @@ class _ClassSessionDetailsContent extends StatelessWidget {
               onPressed: () =>
                   context.read<ClassSessionCubit>().loadClassSession(),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2563EB),
-                foregroundColor: Colors.white,
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -127,27 +129,29 @@ class _ClassSessionDetailsContent extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surface,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.class_, size: 64, color: Colors.grey[400]),
+            Icon(Icons.class_, size: 64, color: colorScheme.onSurfaceVariant),
             const SizedBox(height: 16),
             Text(
               'Class session not found',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[800],
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'The requested class session could not be found',
-              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -156,17 +160,28 @@ class _ClassSessionDetailsContent extends StatelessWidget {
     );
   }
 
-  Widget _buildContent(BuildContext context, ClassSessionState state) {
+  Widget _buildContent(
+    BuildContext context,
+    ClassSessionState state,
+    ThemeData theme,
+  ) {
     final cubit = context.read<ClassSessionCubit>();
     final classSession = state.classSession!;
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: Column(
           children: [
             // Header
-            _buildHeader(context, classSession, cubit, state.showMenu),
+            _buildHeader(
+              context,
+              classSession,
+              cubit,
+              state.showMenu,
+              colorScheme,
+            ),
 
             // Content
             Expanded(
@@ -175,33 +190,35 @@ class _ClassSessionDetailsContent extends StatelessWidget {
                 child: Column(
                   children: [
                     // Class Info Card
-                    _buildClassInfoCard(classSession),
+                    _buildClassInfoCard(classSession, colorScheme),
 
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
                     // Attendance Stats
-                    _buildAttendanceStats(classSession.stats),
+                    _buildAttendanceStats(classSession.stats, colorScheme),
 
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
                     // Attendance Rate Card
                     _buildAttendanceRateCard(
                       classSession.stats.attendanceRate,
                       state.fingerprintVerifiedCount,
+                      colorScheme,
                     ),
 
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
                     // Attendance Session Control
                     _buildAttendanceSessionControl(
                       cubit,
                       state.isAttendanceActive,
+                      colorScheme,
                     ),
 
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
                     // Student List
-                    _buildStudentList(cubit, state),
+                    _buildStudentList(cubit, state, colorScheme),
                   ],
                 ),
               ),
@@ -217,11 +234,14 @@ class _ClassSessionDetailsContent extends StatelessWidget {
     ClassSessionEntity classSession,
     ClassSessionCubit cubit,
     bool showMenu,
+    ColorScheme colorScheme,
   ) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+        color: colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -233,14 +253,14 @@ class _ClassSessionDetailsContent extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                color: Colors.white,
+                color: colorScheme.surface,
               ),
               child: IconButton(
                 onPressed: () => context.pop(),
-                icon: const Icon(
+                icon: Icon(
                   Icons.arrow_back,
                   size: 20,
-                  color: Colors.black,
+                  color: colorScheme.onSurface,
                 ),
               ),
             ),
@@ -252,17 +272,20 @@ class _ClassSessionDetailsContent extends StatelessWidget {
                 children: [
                   Text(
                     "Class Session",
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                      color: Colors.black,
+                      color: colorScheme.onSurface,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   Text(
                     classSession.date.toLocal().toString().split(' ')[0],
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -273,14 +296,14 @@ class _ClassSessionDetailsContent extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                color: Colors.white,
+                color: colorScheme.surface,
               ),
               child: IconButton(
                 onPressed: () => cubit.toggleMenu(!showMenu),
-                icon: const Icon(
+                icon: Icon(
                   Icons.more_vert,
                   size: 20,
-                  color: Colors.black,
+                  color: colorScheme.onSurface,
                 ),
               ),
             ),
@@ -290,69 +313,84 @@ class _ClassSessionDetailsContent extends StatelessWidget {
     );
   }
 
-  Widget _buildClassInfoCard(ClassSessionEntity classSession) {
+  Widget _buildClassInfoCard(
+    ClassSessionEntity classSession,
+    ColorScheme colorScheme,
+  ) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
+        color: colorScheme.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFBFDBFE)),
+        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             "Session Information",
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 14,
-              color: Color(0xFF1E3A8A),
+              color: colorScheme.primary,
             ),
           ),
           const SizedBox(height: 16),
-          _buildInfoRow(Icons.person, "Lecturer:", classSession.lecturer.name),
+          _buildInfoRow(
+            Icons.person,
+            "Lecturer:",
+            classSession.lecturer.name,
+            colorScheme,
+          ),
           const SizedBox(height: 8),
           _buildInfoRow(
             Icons.calendar_today,
             "Date:",
             _formatDate(classSession.date),
+            colorScheme,
           ),
           const SizedBox(height: 8),
           _buildInfoRow(
             Icons.access_time,
             "Time:",
             _formatTimeRange(classSession.startTime, classSession.endTime),
+            colorScheme,
           ),
           const SizedBox(height: 8),
           if (classSession.venue != null && classSession.venue!.isNotEmpty)
-            _buildInfoRow(Icons.location_on, "Venue:", classSession.venue!),
+            _buildInfoRow(
+              Icons.location_on,
+              "Venue:",
+              classSession.venue!,
+              colorScheme,
+            ),
           if (classSession.topic != null && classSession.topic!.isNotEmpty) ...[
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFDBEAFE),
+                color: colorScheme.primary.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF93C5FD)),
+                border: Border.all(color: colorScheme.primary.withValues(alpha: 0.4)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     "Today's Topic",
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1E3A8A),
+                      color: colorScheme.primary,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     classSession.topic!,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E3A8A),
+                      color: colorScheme.primary,
                     ),
                   ),
                 ],
@@ -364,23 +402,28 @@ class _ClassSessionDetailsContent extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
+  Widget _buildInfoRow(
+    IconData icon,
+    String label,
+    String value,
+    ColorScheme colorScheme,
+  ) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: const Color(0xFF2563EB)),
+        Icon(icon, size: 16, color: colorScheme.primary),
         const SizedBox(width: 8),
         Text(
           label,
-          style: const TextStyle(fontSize: 14, color: Color(0xFF4B5563)),
+          style: TextStyle(fontSize: 14, color: colorScheme.onSurfaceVariant),
         ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF111827),
+              color: colorScheme.onSurface,
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -389,14 +432,15 @@ class _ClassSessionDetailsContent extends StatelessWidget {
     );
   }
 
-  Widget _buildAttendanceStats(ClassStats stats) {
+  Widget _buildAttendanceStats(ClassStats stats, ColorScheme colorScheme) {
     return Row(
       children: [
         Expanded(
           child: _buildStatCard(
             stats.totalStudents.toString(),
             "Total",
-            Colors.blue,
+            colorScheme.primary,
+            colorScheme,
           ),
         ),
         const SizedBox(width: 12),
@@ -405,17 +449,28 @@ class _ClassSessionDetailsContent extends StatelessWidget {
             stats.present.toString(),
             "Present",
             Colors.green,
+            colorScheme,
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _buildStatCard(stats.absent.toString(), "Absent", Colors.red),
+          child: _buildStatCard(
+            stats.absent.toString(),
+            "Absent",
+            Colors.red,
+            colorScheme,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildStatCard(String value, String label, Color color) {
+  Widget _buildStatCard(
+    String value,
+    String label,
+    Color color,
+    ColorScheme colorScheme,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -447,13 +502,17 @@ class _ClassSessionDetailsContent extends StatelessWidget {
     );
   }
 
-  Widget _buildAttendanceRateCard(double attendanceRate, int fingerprintCount) {
+  Widget _buildAttendanceRateCard(
+    double attendanceRate,
+    int fingerprintCount,
+    ColorScheme colorScheme,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -461,20 +520,20 @@ class _ClassSessionDetailsContent extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 "Attendance Rate",
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black,
+                  color: colorScheme.onSurface,
                 ),
               ),
               Text(
                 "${attendanceRate.round()}%",
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: colorScheme.onSurface,
                 ),
               ),
             ],
@@ -483,7 +542,7 @@ class _ClassSessionDetailsContent extends StatelessWidget {
           Container(
             height: 8,
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
+              color: colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(4),
             ),
             child: FractionallySizedBox(
@@ -491,8 +550,8 @@ class _ClassSessionDetailsContent extends StatelessWidget {
               widthFactor: attendanceRate / 100,
               child: Container(
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+                  gradient: LinearGradient(
+                    colors: [colorScheme.primary, colorScheme.primaryContainer],
                   ),
                   borderRadius: BorderRadius.circular(4),
                 ),
@@ -502,11 +561,18 @@ class _ClassSessionDetailsContent extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              const Icon(Icons.fingerprint, size: 14, color: Color(0xFF6B7280)),
+              Icon(
+                Icons.fingerprint,
+                size: 14,
+                color: colorScheme.onSurfaceVariant,
+              ),
               const SizedBox(width: 4),
               Text(
                 "$fingerprintCount fingerprint verified",
-                style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -518,12 +584,13 @@ class _ClassSessionDetailsContent extends StatelessWidget {
   Widget _buildAttendanceSessionControl(
     ClassSessionCubit cubit,
     bool isAttendanceActive,
+    ColorScheme colorScheme,
   ) {
     if (!isAttendanceActive) {
       return Container(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+          gradient: LinearGradient(
+            colors: [colorScheme.primary, colorScheme.primaryContainer],
           ),
           borderRadius: BorderRadius.circular(16),
         ),
@@ -535,15 +602,19 @@ class _ClassSessionDetailsContent extends StatelessWidget {
             child: Container(
               height: 56,
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.play_arrow, size: 20, color: Colors.white),
-                  SizedBox(width: 8),
+                  Icon(
+                    Icons.play_arrow,
+                    size: 20,
+                    color: colorScheme.onPrimary,
+                  ),
+                  const SizedBox(width: 8),
                   Text(
                     "Start Attendance Session",
                     style: TextStyle(
-                      color: Colors.white,
+                      color: colorScheme.onPrimary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -558,9 +629,9 @@ class _ClassSessionDetailsContent extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFDCFCE7),
+        color: Colors.green.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFBBF7D0)),
+        border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -573,7 +644,7 @@ class _ClassSessionDetailsContent extends StatelessWidget {
                     width: 8,
                     height: 8,
                     decoration: const BoxDecoration(
-                      color: Color(0xFF16A34A),
+                      color: Colors.green,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -583,7 +654,7 @@ class _ClassSessionDetailsContent extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF166534),
+                      color: Colors.green,
                     ),
                   ),
                 ],
@@ -591,8 +662,8 @@ class _ClassSessionDetailsContent extends StatelessWidget {
               ElevatedButton(
                 onPressed: () => cubit.toggleAttendanceSession(false),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFDC2626),
-                  foregroundColor: Colors.white,
+                  backgroundColor: colorScheme.error,
+                  foregroundColor: colorScheme.onError,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -614,20 +685,24 @@ class _ClassSessionDetailsContent extends StatelessWidget {
           const SizedBox(height: 8),
           const Text(
             "Scanner ready. Students can now check in with fingerprint.",
-            style: TextStyle(fontSize: 12, color: Color(0xFF166534)),
+            style: TextStyle(fontSize: 12, color: Colors.green),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStudentList(ClassSessionCubit cubit, ClassSessionState state) {
+  Widget _buildStudentList(
+    ClassSessionCubit cubit,
+    ClassSessionState state,
+    ColorScheme colorScheme,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -635,21 +710,27 @@ class _ClassSessionDetailsContent extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 "Students",
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: colorScheme.onSurface,
                 ),
               ),
               OutlinedButton.icon(
                 onPressed: () => cubit.toggleAddStudentDialog(true),
-                icon: const Icon(Icons.person_add, size: 16),
-                label: const Text("Add"),
+                icon: Icon(
+                  Icons.person_add,
+                  size: 16,
+                  color: colorScheme.onSurface,
+                ),
+                label: Text(
+                  "Add",
+                  style: TextStyle(color: colorScheme.onSurface),
+                ),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.black,
-                  side: BorderSide(color: Colors.grey.shade300),
+                  side: BorderSide(color: colorScheme.outline),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -663,15 +744,20 @@ class _ClassSessionDetailsContent extends StatelessWidget {
             height: 48,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: colorScheme.outline.withValues(alpha: 0.5)),
             ),
             child: TextField(
-              decoration: const InputDecoration(
+              style: TextStyle(color: colorScheme.onSurface),
+              decoration: InputDecoration(
                 hintText: "Search students...",
-                hintStyle: TextStyle(color: Colors.grey),
+                hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
                 border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 16),
-                prefixIcon: Icon(Icons.search, color: Colors.grey),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                prefixIcon: Icon(
+                  Icons.search,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                fillColor: colorScheme.surface,
               ),
               onChanged: cubit.updateSearchQuery,
             ),
@@ -680,7 +766,12 @@ class _ClassSessionDetailsContent extends StatelessWidget {
           // Student List
           Column(
             children: state.filteredAttendanceRecords.map((record) {
-              return _buildStudentCard(cubit, record, state.isAttendanceActive);
+              return _buildStudentCard(
+                cubit,
+                record,
+                state.isAttendanceActive,
+                colorScheme,
+              );
             }).toList(),
           ),
         ],
@@ -692,16 +783,17 @@ class _ClassSessionDetailsContent extends StatelessWidget {
     ClassSessionCubit cubit,
     AttendanceRecord record,
     bool isAttendanceActive,
+    ColorScheme colorScheme,
   ) {
+    final statusColor = _getStatusColor(record.status);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: _getStatusColor(record.status).withAlpha(25),
+        color: statusColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: _getStatusColor(record.status).withAlpha(76),
-        ),
+        border: Border.all(color: statusColor.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -712,20 +804,26 @@ class _ClassSessionDetailsContent extends StatelessWidget {
               children: [
                 Text(
                   record.student.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black,
+                    color: colorScheme.onSurface,
                   ),
                 ),
                 Text(
                   record.student.matricNumber,
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 if (record.timestamp != null)
                   Text(
                     _formatTime(record.timestamp!),
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
               ],
             ),
@@ -736,7 +834,7 @@ class _ClassSessionDetailsContent extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _getStatusColor(record.status),
+                  color: statusColor,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -771,9 +869,9 @@ class _ClassSessionDetailsContent extends StatelessWidget {
                     padding: EdgeInsets.zero,
                     minimumSize: const Size(50, 30),
                   ),
-                  child: const Text(
+                  child: Text(
                     "Mark",
-                    style: TextStyle(fontSize: 12, color: Color(0xFF2563EB)),
+                    style: TextStyle(fontSize: 12, color: colorScheme.primary),
                   ),
                 ),
             ],
@@ -786,9 +884,9 @@ class _ClassSessionDetailsContent extends StatelessWidget {
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'present':
-        return const Color(0xFF16A34A);
+        return Colors.green;
       case 'absent':
-        return const Color(0xFFDC2626);
+        return Colors.red;
       default:
         return Colors.grey;
     }
