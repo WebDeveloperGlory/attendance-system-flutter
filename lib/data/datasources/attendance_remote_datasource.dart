@@ -39,24 +39,15 @@ class AttendanceRemoteDataSourceImpl implements AttendanceRemoteDataSource {
   @override
   Future<ClassAttendanceDetailModel> getClassAttendance(String classId) async {
     try {
-      print('📡 Fetching class attendance for classId: $classId');
-
       final response = await dioClient.dio.get(
         '/attendance/class/attendance',
         queryParameters: {'classId': classId},
       );
 
-      print('📦 Response: ${response.data}');
-
       if (response.data['code'] == '00') {
         final data = response.data['data'];
-        print('🎯 Data keys: ${data.keys.toList()}');
-
-        if (data.containsKey('students')) {
-          print('👥 Students count: ${(data['students'] as List).length}');
-          print('👥 Students: ${data['students']}');
-        }
-
+        // Pass classId to the model
+        data['_id'] = classId; // Add classId to the data
         return ClassAttendanceDetailModel.fromJson(data);
       } else {
         throw ServerFailure(

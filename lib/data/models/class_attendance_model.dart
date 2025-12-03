@@ -7,13 +7,17 @@ class ClassAttendanceDetailModel extends ClassAttendanceDetailEntity {
   });
 
   factory ClassAttendanceDetailModel.fromJson(Map<String, dynamic> json) {
+    final classJson = json['class'] as Map<String, dynamic>? ?? {};
+    final attendanceJson = json['attendance'] as List<dynamic>? ?? [];
+
     return ClassAttendanceDetailModel(
-      classSession: ClassSessionDetailModel.fromJson(json),
-      attendance:
-          (json['students'] as List<dynamic>?)
-              ?.map((student) => StudentAttendanceModel.fromJson(student))
-              .toList() ??
-          const [],
+      classSession: ClassSessionDetailModel.fromJson({
+        '_id': '',
+        ...classJson,
+      }),
+      attendance: attendanceJson
+          .map((student) => StudentAttendanceModel.fromJson(student))
+          .toList(),
     );
   }
 }
