@@ -22,13 +22,13 @@ class _LecturerShellState extends State<LecturerShell> {
     // Navigate to the corresponding lecturer page
     switch (index) {
       case 0:
-        context.go('/lecturer/dashboard');
+        context.push('/lecturer/dashboard');
         break;
       case 1:
-        context.go('/lecturer/create-class');
+        context.push('/lecturer/create-class');
         break;
       case 2:
-        context.go('/lecturer/records');
+        context.push('/lecturer/records');
         break;
     }
   }

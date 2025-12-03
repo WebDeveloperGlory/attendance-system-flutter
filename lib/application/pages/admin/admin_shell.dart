@@ -22,13 +22,13 @@ class _AdminShellState extends State<AdminShell> {
     // Navigate to the corresponding admin page
     switch (index) {
       case 0:
-        context.go('/admin/dashboard');
+        context.push('/admin/dashboard');
         break;
       case 1:
-        context.go('/admin/students');
+        context.push('/admin/students');
         break;
       case 2:
-        context.go('/admin/lecturers');
+        context.push('/admin/lecturers');
         break;
     }
   }

@@ -21,19 +21,19 @@ class _CreateClassSessionContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return BlocConsumer<CreateClassCubit, CreateClassState>(
       listener: (context, state) {
         if (state.status == CreateClassStatus.success) {
-          // Show success message
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Class session created successfully!'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
+            SnackBar(
+              content: const Text('Class session created successfully!'),
+              backgroundColor: theme.colorScheme.primary,
+              duration: const Duration(seconds: 2),
             ),
           );
 
-          // Use Future.delayed to avoid navigation issues
           Future.delayed(const Duration(milliseconds: 500), () {
             if (context.mounted) {
               context.push('/lecturer/dashboard');
@@ -45,23 +45,23 @@ class _CreateClassSessionContent extends StatelessWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.failure?.message ?? 'An error occurred'),
-              backgroundColor: Colors.red,
+              backgroundColor: theme.colorScheme.error,
             ),
           );
         }
       },
       builder: (context, state) {
         return Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: theme.colorScheme.surface,
           body: SafeArea(
             child: Column(
               children: [
                 // Header
-                _buildHeader(context),
+                _buildHeader(context, theme),
                 // Content
-                Expanded(child: _buildContent(context, state)),
+                Expanded(child: _buildContent(context, state, theme)),
                 // Bottom Navigation
-                _buildBottomNavigation(context, state),
+                _buildBottomNavigation(context, state, theme),
               ],
             ),
           ),
@@ -70,11 +70,15 @@ class _CreateClassSessionContent extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+        color: colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -86,14 +90,14 @@ class _CreateClassSessionContent extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                color: Colors.white,
+                color: colorScheme.surface,
               ),
               child: IconButton(
                 onPressed: () => context.pop(),
-                icon: const Icon(
+                icon: Icon(
                   Icons.arrow_back,
                   size: 20,
-                  color: Colors.black,
+                  color: colorScheme.onSurface,
                 ),
               ),
             ),
@@ -103,12 +107,11 @@ class _CreateClassSessionContent extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     "Create Class Session",
-                    style: TextStyle(
+                    style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Colors.black,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                   BlocBuilder<CreateClassCubit, CreateClassState>(
@@ -116,9 +119,8 @@ class _CreateClassSessionContent extends StatelessWidget {
                       final step = state.currentStep;
                       return Text(
                         "Step $step of 3",
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       );
                     },
@@ -132,9 +134,17 @@ class _CreateClassSessionContent extends StatelessWidget {
     );
   }
 
-  Widget _buildContent(BuildContext context, CreateClassState state) {
+  Widget _buildContent(
+    BuildContext context,
+    CreateClassState state,
+    ThemeData theme,
+  ) {
+    final colorScheme = theme.colorScheme;
+
     if (state.status == CreateClassStatus.loading && state.currentStep == 1) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(
+        child: CircularProgressIndicator(color: colorScheme.primary),
+      );
     }
 
     return SingleChildScrollView(
@@ -142,19 +152,23 @@ class _CreateClassSessionContent extends StatelessWidget {
       child: Column(
         children: [
           // Progress Bar
-          _buildProgressBar(context, state),
+          _buildProgressBar(context, state, colorScheme),
           const SizedBox(height: 16),
           // Step Indicators
-          _buildStepIndicators(context, state),
+          _buildStepIndicators(context, state, colorScheme),
           const SizedBox(height: 16),
           // Step Content
-          _buildStepContent(context, state),
+          _buildStepContent(context, state, theme),
         ],
       ),
     );
   }
 
-  Widget _buildProgressBar(BuildContext context, CreateClassState state) {
+  Widget _buildProgressBar(
+    BuildContext context,
+    CreateClassState state,
+    ColorScheme colorScheme,
+  ) {
     final progress = (state.currentStep / 3) * 100;
 
     return Column(
@@ -162,16 +176,19 @@ class _CreateClassSessionContent extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               "Progress",
-              style: TextStyle(fontSize: 14, color: Colors.grey),
+              style: TextStyle(
+                fontSize: 14,
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
             Text(
               "${progress.round()}%",
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: Colors.black,
+                color: colorScheme.onSurface,
               ),
             ),
           ],
@@ -180,7 +197,7 @@ class _CreateClassSessionContent extends StatelessWidget {
         Container(
           height: 8,
           decoration: BoxDecoration(
-            color: Colors.grey.shade100,
+            color: colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(4),
           ),
           child: FractionallySizedBox(
@@ -188,8 +205,8 @@ class _CreateClassSessionContent extends StatelessWidget {
             widthFactor: state.currentStep / 3,
             child: Container(
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+                gradient: LinearGradient(
+                  colors: [colorScheme.primary, colorScheme.primaryContainer],
                 ),
                 borderRadius: BorderRadius.circular(4),
               ),
@@ -200,7 +217,11 @@ class _CreateClassSessionContent extends StatelessWidget {
     );
   }
 
-  Widget _buildStepIndicators(BuildContext context, CreateClassState state) {
+  Widget _buildStepIndicators(
+    BuildContext context,
+    CreateClassState state,
+    ColorScheme colorScheme,
+  ) {
     return Row(
       children: List.generate(3, (index) {
         final stepNum = index + 1;
@@ -210,8 +231,8 @@ class _CreateClassSessionContent extends StatelessWidget {
             margin: EdgeInsets.only(right: index < 2 ? 8 : 0),
             decoration: BoxDecoration(
               color: stepNum <= state.currentStep
-                  ? const Color(0xFF2563EB)
-                  : Colors.grey.shade200,
+                  ? colorScheme.primary
+                  : colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -220,21 +241,31 @@ class _CreateClassSessionContent extends StatelessWidget {
     );
   }
 
-  Widget _buildStepContent(BuildContext context, CreateClassState state) {
+  Widget _buildStepContent(
+    BuildContext context,
+    CreateClassState state,
+    ThemeData theme,
+  ) {
     switch (state.currentStep) {
       case 1:
-        return _buildStep1(context, state);
+        return _buildStep1(context, state, theme);
       case 2:
-        return _buildStep2(context, state);
+        return _buildStep2(context, state, theme);
       case 3:
-        return _buildStep3(context, state);
+        return _buildStep3(context, state, theme);
       default:
         return const SizedBox();
     }
   }
 
-  Widget _buildStep1(BuildContext context, CreateClassState state) {
+  Widget _buildStep1(
+    BuildContext context,
+    CreateClassState state,
+    ThemeData theme,
+  ) {
     final cubit = context.read<CreateClassCubit>();
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
 
     return Column(
       children: [
@@ -242,27 +273,22 @@ class _CreateClassSessionContent extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  const Icon(
-                    Icons.menu_book,
-                    size: 20,
-                    color: Color(0xFF2563EB),
-                  ),
+                  Icon(Icons.menu_book, size: 20, color: colorScheme.primary),
                   const SizedBox(width: 8),
-                  const Text(
+                  Text(
                     "Select Course",
-                    style: TextStyle(
+                    style: textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Colors.black,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                 ],
@@ -271,12 +297,11 @@ class _CreateClassSessionContent extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     "Course",
-                    style: TextStyle(
-                      fontSize: 14,
+                    style: textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: Colors.black,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -284,20 +309,31 @@ class _CreateClassSessionContent extends StatelessWidget {
                     height: 48,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade200),
+                      border: Border.all(
+                        color: colorScheme.outline.withValues(alpha: 0.5),
+                      ),
                     ),
                     child: DropdownButtonFormField<String>(
-                      value: state.courseId.isEmpty ? null : state.courseId,
-                      decoration: const InputDecoration(
+                      initialValue: state.courseId.isEmpty ? null : state.courseId,
+                      decoration: InputDecoration(
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                        ),
+                        fillColor: colorScheme.surface,
+                      ),
+                      dropdownColor: colorScheme.surface,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurface,
                       ),
                       items: [
-                        const DropdownMenuItem(
+                        DropdownMenuItem(
                           value: null,
                           child: Text(
                             "Select a course...",
-                            style: TextStyle(color: Colors.grey),
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ),
                         ...state.lecturerCourses.map((course) {
@@ -305,10 +341,12 @@ class _CreateClassSessionContent extends StatelessWidget {
                             value: course.id,
                             child: Text(
                               "${course.code} - ${course.name}",
-                              style: const TextStyle(color: Colors.black),
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurface,
+                              ),
                             ),
                           );
-                        }).toList(),
+                        }),
                       ],
                       onChanged: (value) {
                         cubit.updateCourse(value ?? '');
@@ -322,36 +360,41 @@ class _CreateClassSessionContent extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFDBEAFE),
+                    color: colorScheme.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFBFDBFE)),
+                    border: Border.all(
+                      color: colorScheme.primary.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Column(
                     children: [
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.menu_book,
                             size: 16,
-                            color: Color(0xFF2563EB),
+                            color: colorScheme.primary,
                           ),
                           const SizedBox(width: 8),
                           Text(
                             "Level ${state.selectedCourse!.level}",
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey,
+                            style: textTheme.labelSmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                           const SizedBox(width: 8),
-                          const Text("•", style: TextStyle(color: Colors.grey)),
+                          Text(
+                            "•",
+                            style: TextStyle(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             state.selectedCourse!.department.name,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey,
+                            style: textTheme.labelSmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -359,17 +402,16 @@ class _CreateClassSessionContent extends StatelessWidget {
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.people,
                             size: 16,
-                            color: Color(0xFF2563EB),
+                            color: colorScheme.primary,
                           ),
                           const SizedBox(width: 8),
                           Text(
                             "${state.selectedCourse!.students.length} students enrolled",
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey,
+                            style: textTheme.labelSmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -387,47 +429,54 @@ class _CreateClassSessionContent extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 "Class Topic",
-                style: TextStyle(
+                style: textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: Colors.black,
+                  color: colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 16),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     "Topic/Description",
-                    style: TextStyle(
-                      fontSize: 14,
+                    style: textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: Colors.black,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 8),
                   TextField(
                     onChanged: (value) => cubit.updateTopic(value),
-                    decoration: const InputDecoration(
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurface,
+                    ),
+                    decoration: InputDecoration(
                       hintText: "e.g., Binary Trees and Traversal",
-                      hintStyle: TextStyle(color: Colors.grey),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(12)),
-                        borderSide: BorderSide(color: Colors.grey),
+                      hintStyle: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
                       ),
-                      contentPadding: EdgeInsets.symmetric(
+                      border: OutlineInputBorder(
+                        borderRadius: const BorderRadius.all(
+                          Radius.circular(12),
+                        ),
+                        borderSide: BorderSide(color: colorScheme.outline),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 12,
                       ),
+                      filled: true,
+                      fillColor: colorScheme.surface,
                     ),
                   ),
                 ],
@@ -439,8 +488,14 @@ class _CreateClassSessionContent extends StatelessWidget {
     );
   }
 
-  Widget _buildStep2(BuildContext context, CreateClassState state) {
+  Widget _buildStep2(
+    BuildContext context,
+    CreateClassState state,
+    ThemeData theme,
+  ) {
     final cubit = context.read<CreateClassCubit>();
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
 
     return Column(
       children: [
@@ -448,27 +503,26 @@ class _CreateClassSessionContent extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.calendar_today,
                     size: 20,
-                    color: Color(0xFF2563EB),
+                    color: colorScheme.primary,
                   ),
                   const SizedBox(width: 8),
-                  const Text(
+                  Text(
                     "Schedule Details",
-                    style: TextStyle(
+                    style: textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Colors.black,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                 ],
@@ -480,12 +534,11 @@ class _CreateClassSessionContent extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         "Date",
-                        style: TextStyle(
-                          fontSize: 14,
+                        style: textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: Colors.black,
+                          color: colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -493,30 +546,49 @@ class _CreateClassSessionContent extends StatelessWidget {
                         height: 48,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey.shade200),
+                          border: Border.all(
+                            color: colorScheme.outline.withValues(alpha: 0.5),
+                          ),
                         ),
                         child: TextField(
                           controller: TextEditingController(text: state.date),
                           readOnly: true,
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurface,
+                          ),
                           onTap: () async {
                             final selectedDate = await showDatePicker(
                               context: context,
                               initialDate: DateTime.now(),
                               firstDate: DateTime.now(),
                               lastDate: DateTime(DateTime.now().year + 1),
+                              builder: (context, child) {
+                                return Theme(
+                                  data: Theme.of(
+                                    context,
+                                  ).copyWith(colorScheme: colorScheme),
+                                  child: child!,
+                                );
+                              },
                             );
                             if (selectedDate != null) {
                               cubit.updateDate(selectedDate);
                             }
                           },
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             hintText: "Select date",
-                            hintStyle: TextStyle(color: Colors.grey),
+                            hintStyle: textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
                             border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(
+                            contentPadding: const EdgeInsets.symmetric(
                               horizontal: 16,
                             ),
-                            suffixIcon: Icon(Icons.calendar_today),
+                            suffixIcon: Icon(
+                              Icons.calendar_today,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            fillColor: colorScheme.surface,
                           ),
                         ),
                       ),
@@ -530,12 +602,11 @@ class _CreateClassSessionContent extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               "Start Time",
-                              style: TextStyle(
-                                fontSize: 14,
+                              style: textTheme.bodyMedium?.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: Colors.black,
+                                color: colorScheme.onSurface,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -543,30 +614,49 @@ class _CreateClassSessionContent extends StatelessWidget {
                               height: 48,
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.grey.shade200),
+                                border: Border.all(
+                                  color: colorScheme.outline.withValues(alpha: 0.5),
+                                ),
                               ),
                               child: TextField(
                                 controller: TextEditingController(
                                   text: state.startTime,
                                 ),
                                 readOnly: true,
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: colorScheme.onSurface,
+                                ),
                                 onTap: () async {
                                   final selectedTime = await showTimePicker(
                                     context: context,
                                     initialTime: TimeOfDay.now(),
+                                    builder: (context, child) {
+                                      return Theme(
+                                        data: Theme.of(
+                                          context,
+                                        ).copyWith(colorScheme: colorScheme),
+                                        child: child!,
+                                      );
+                                    },
                                   );
                                   if (selectedTime != null) {
                                     cubit.updateStartTime(selectedTime);
                                   }
                                 },
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   hintText: "Start time",
-                                  hintStyle: TextStyle(color: Colors.grey),
+                                  hintStyle: textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
                                   border: InputBorder.none,
-                                  contentPadding: EdgeInsets.symmetric(
+                                  contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 16,
                                   ),
-                                  suffixIcon: Icon(Icons.access_time),
+                                  suffixIcon: Icon(
+                                    Icons.access_time,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                  fillColor: colorScheme.surface,
                                 ),
                               ),
                             ),
@@ -578,12 +668,11 @@ class _CreateClassSessionContent extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               "End Time",
-                              style: TextStyle(
-                                fontSize: 14,
+                              style: textTheme.bodyMedium?.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: Colors.black,
+                                color: colorScheme.onSurface,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -591,30 +680,49 @@ class _CreateClassSessionContent extends StatelessWidget {
                               height: 48,
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.grey.shade200),
+                                border: Border.all(
+                                  color: colorScheme.outline.withValues(alpha: 0.5),
+                                ),
                               ),
                               child: TextField(
                                 controller: TextEditingController(
                                   text: state.endTime,
                                 ),
                                 readOnly: true,
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: colorScheme.onSurface,
+                                ),
                                 onTap: () async {
                                   final selectedTime = await showTimePicker(
                                     context: context,
                                     initialTime: TimeOfDay.now(),
+                                    builder: (context, child) {
+                                      return Theme(
+                                        data: Theme.of(
+                                          context,
+                                        ).copyWith(colorScheme: colorScheme),
+                                        child: child!,
+                                      );
+                                    },
                                   );
                                   if (selectedTime != null) {
                                     cubit.updateEndTime(selectedTime);
                                   }
                                 },
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   hintText: "End time",
-                                  hintStyle: TextStyle(color: Colors.grey),
+                                  hintStyle: textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
                                   border: InputBorder.none,
-                                  contentPadding: EdgeInsets.symmetric(
+                                  contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 16,
                                   ),
-                                  suffixIcon: Icon(Icons.access_time),
+                                  suffixIcon: Icon(
+                                    Icons.access_time,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                  fillColor: colorScheme.surface,
                                 ),
                               ),
                             ),
@@ -630,18 +738,17 @@ class _CreateClassSessionContent extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.location_on,
                             size: 16,
-                            color: Color(0xFF2563EB),
+                            color: colorScheme.primary,
                           ),
                           const SizedBox(width: 8),
-                          const Text(
+                          Text(
                             "Venue/Location",
-                            style: TextStyle(
-                              fontSize: 14,
+                            style: textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w600,
-                              color: Colors.black,
+                              color: colorScheme.onSurface,
                             ),
                           ),
                         ],
@@ -649,17 +756,26 @@ class _CreateClassSessionContent extends StatelessWidget {
                       const SizedBox(height: 8),
                       TextField(
                         onChanged: (value) => cubit.updateVenue(value),
-                        decoration: const InputDecoration(
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurface,
+                        ),
+                        decoration: InputDecoration(
                           hintText: "e.g., Room 101, Building A",
-                          hintStyle: TextStyle(color: Colors.grey),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(12)),
-                            borderSide: BorderSide(color: Colors.grey),
+                          hintStyle: textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
                           ),
-                          contentPadding: EdgeInsets.symmetric(
+                          border: OutlineInputBorder(
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(12),
+                            ),
+                            borderSide: BorderSide(color: colorScheme.outline),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 12,
                           ),
+                          filled: true,
+                          fillColor: colorScheme.surface,
                         ),
                       ),
                     ],
@@ -675,19 +791,18 @@ class _CreateClassSessionContent extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFFDBEAFE),
+              color: colorScheme.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFBFDBFE)),
+              border: Border.all(color: colorScheme.primary.withValues(alpha: 0.3)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   "Session Preview",
-                  style: TextStyle(
-                    fontSize: 12,
+                  style: textTheme.labelSmall?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1E3A8A),
+                    color: colorScheme.primary,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -695,17 +810,16 @@ class _CreateClassSessionContent extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.calendar_today,
                           size: 16,
-                          color: Color(0xFF2563EB),
+                          color: colorScheme.primary,
                         ),
                         const SizedBox(width: 8),
                         Text(
                           _formatDate(state.date),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
+                          style: textTheme.labelSmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -713,17 +827,16 @@ class _CreateClassSessionContent extends StatelessWidget {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.access_time,
                           size: 16,
-                          color: Color(0xFF2563EB),
+                          color: colorScheme.primary,
                         ),
                         const SizedBox(width: 8),
                         Text(
                           "${state.startTime} - ${state.endTime}",
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
+                          style: textTheme.labelSmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -732,17 +845,16 @@ class _CreateClassSessionContent extends StatelessWidget {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.location_on,
                             size: 16,
-                            color: Color(0xFF2563EB),
+                            color: colorScheme.primary,
                           ),
                           const SizedBox(width: 8),
                           Text(
                             state.venue,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey,
+                            style: textTheme.labelSmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -758,8 +870,14 @@ class _CreateClassSessionContent extends StatelessWidget {
     );
   }
 
-  Widget _buildStep3(BuildContext context, CreateClassState state) {
+  Widget _buildStep3(
+    BuildContext context,
+    CreateClassState state,
+    ThemeData theme,
+  ) {
     final cubit = context.read<CreateClassCubit>();
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
     final totalStudents =
         (state.selectedCourse?.students.length ?? 0) +
         state.carryoverStudents.length;
@@ -770,23 +888,22 @@ class _CreateClassSessionContent extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  const Icon(Icons.people, size: 20, color: Color(0xFF2563EB)),
+                  Icon(Icons.people, size: 20, color: colorScheme.primary),
                   const SizedBox(width: 8),
-                  const Text(
+                  Text(
                     "Course Students",
-                    style: TextStyle(
+                    style: textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Colors.black,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                 ],
@@ -794,13 +911,17 @@ class _CreateClassSessionContent extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 "${state.selectedCourse?.students.length ?? 0} students enrolled in ${state.selectedCourse?.code}",
-                style: const TextStyle(fontSize: 14, color: Colors.grey),
+                style: textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 16),
               if (state.status == CreateClassStatus.loading)
-                const Center(child: CircularProgressIndicator())
+                Center(
+                  child: CircularProgressIndicator(color: colorScheme.primary),
+                )
               else
-                Container(
+                SizedBox(
                   height: 256,
                   child: ListView.builder(
                     itemCount: state.selectedCourse?.students.length ?? 0,
@@ -809,35 +930,35 @@ class _CreateClassSessionContent extends StatelessWidget {
                         margin: const EdgeInsets.only(bottom: 8),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFDCFCE7),
+                          color: Colors.green.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFBBF7D0)),
+                          border: Border.all(
+                            color: Colors.green.withValues(alpha: 0.3),
+                          ),
                         ),
-                        child: const Row(
+                        child: Row(
                           children: [
                             Icon(
                               Icons.check_circle,
                               size: 20,
-                              color: Color(0xFF16A34A),
+                              color: Colors.green,
                             ),
-                            SizedBox(width: 12),
+                            const SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     "Student enrolled in course",
-                                    style: TextStyle(
-                                      fontSize: 14,
+                                    style: textTheme.bodyMedium?.copyWith(
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.black,
+                                      color: colorScheme.onSurface,
                                     ),
                                   ),
                                   Text(
                                     "Will be automatically included",
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey,
+                                    style: textTheme.labelSmall?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                 ],
@@ -857,35 +978,32 @@ class _CreateClassSessionContent extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  const Icon(
-                    Icons.person_add,
-                    size: 20,
-                    color: Color(0xFF2563EB),
-                  ),
+                  Icon(Icons.person_add, size: 20, color: colorScheme.primary),
                   const SizedBox(width: 8),
-                  const Text(
+                  Text(
                     "Add Carryover Students",
-                    style: TextStyle(
+                    style: textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Colors.black,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 "Optional: Add students from other levels taking this course",
-                style: TextStyle(fontSize: 12, color: Colors.grey),
+                style: textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 16),
               // Search and Add Carryover
@@ -895,26 +1013,39 @@ class _CreateClassSessionContent extends StatelessWidget {
                     height: 48,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade200),
+                      border: Border.all(
+                        color: colorScheme.outline.withValues(alpha: 0.5),
+                      ),
                     ),
                     child: TextField(
                       controller: TextEditingController(
                         text: state.carryoverSearch,
                       ),
                       onChanged: (value) => cubit.updateCarryoverSearch(value),
-                      decoration: const InputDecoration(
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurface,
+                      ),
+                      decoration: InputDecoration(
                         hintText: "Search students...",
-                        hintStyle: TextStyle(color: Colors.grey),
+                        hintStyle: textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16),
-                        prefixIcon: Icon(Icons.search),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                        ),
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        fillColor: colorScheme.surface,
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
                   // Carryover Students List
                   if (state.filteredCarryoverStudents.isNotEmpty)
-                    Container(
+                    SizedBox(
                       height: 200,
                       child: ListView.builder(
                         itemCount: state.filteredCarryoverStudents.length,
@@ -930,13 +1061,13 @@ class _CreateClassSessionContent extends StatelessWidget {
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: isAdded
-                                  ? const Color(0xFFDCFCE7)
-                                  : Colors.white,
+                                  ? Colors.green.withValues(alpha: 0.1)
+                                  : colorScheme.surface,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: isAdded
-                                    ? const Color(0xFFBBF7D0)
-                                    : Colors.grey.shade200,
+                                    ? Colors.green.withValues(alpha: 0.3)
+                                    : colorScheme.outline.withValues(alpha: 0.3),
                               ),
                             ),
                             child: Row(
@@ -948,25 +1079,22 @@ class _CreateClassSessionContent extends StatelessWidget {
                                     children: [
                                       Text(
                                         student.name,
-                                        style: const TextStyle(
-                                          fontSize: 14,
+                                        style: textTheme.bodyMedium?.copyWith(
                                           fontWeight: FontWeight.w600,
-                                          color: Colors.black,
+                                          color: colorScheme.onSurface,
                                         ),
                                       ),
                                       Text(
                                         student.matricNumber ??
                                             'No matric number',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey,
+                                        style: textTheme.labelSmall?.copyWith(
+                                          color: colorScheme.onSurfaceVariant,
                                         ),
                                       ),
                                       Text(
                                         "Level ${student.level ?? 'N/A'} • ${student.department?.name ?? 'No department'}",
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey,
+                                        style: textTheme.labelSmall?.copyWith(
+                                          color: colorScheme.onSurfaceVariant,
                                         ),
                                       ),
                                     ],
@@ -976,10 +1104,10 @@ class _CreateClassSessionContent extends StatelessWidget {
                                   IconButton(
                                     onPressed: () =>
                                         cubit.addCarryoverStudent(student.id),
-                                    icon: const Icon(
+                                    icon: Icon(
                                       Icons.add_circle,
                                       size: 20,
-                                      color: Color(0xFF2563EB),
+                                      color: colorScheme.primary,
                                     ),
                                   ),
                               ],
@@ -995,10 +1123,9 @@ class _CreateClassSessionContent extends StatelessWidget {
                       children: [
                         Text(
                           "${state.carryoverStudents.length} carryover student${state.carryoverStudents.length != 1 ? 's' : ''} added",
-                          style: const TextStyle(
-                            fontSize: 14,
+                          style: textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.w600,
-                            color: Colors.grey,
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -1007,10 +1134,10 @@ class _CreateClassSessionContent extends StatelessWidget {
                             margin: const EdgeInsets.only(bottom: 8),
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFDBEAFE),
+                              color: colorScheme.primary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: const Color(0xFFBFDBFE),
+                                color: colorScheme.primary.withValues(alpha: 0.3),
                               ),
                             ),
                             child: Row(
@@ -1022,18 +1149,16 @@ class _CreateClassSessionContent extends StatelessWidget {
                                     children: [
                                       Text(
                                         student.name,
-                                        style: const TextStyle(
-                                          fontSize: 14,
+                                        style: textTheme.bodyMedium?.copyWith(
                                           fontWeight: FontWeight.w600,
-                                          color: Colors.black,
+                                          color: colorScheme.onSurface,
                                         ),
                                       ),
                                       Text(
                                         student.matricNumber ??
                                             'No matric number',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey,
+                                        style: textTheme.labelSmall?.copyWith(
+                                          color: colorScheme.onSurfaceVariant,
                                         ),
                                       ),
                                     ],
@@ -1042,16 +1167,16 @@ class _CreateClassSessionContent extends StatelessWidget {
                                 IconButton(
                                   onPressed: () =>
                                       cubit.removeCarryoverStudent(student.id),
-                                  icon: const Icon(
+                                  icon: Icon(
                                     Icons.delete,
                                     size: 20,
-                                    color: Colors.red,
+                                    color: colorScheme.error,
                                   ),
                                 ),
                               ],
                             ),
                           );
-                        }).toList(),
+                        }),
                       ],
                     ),
                   ],
@@ -1065,27 +1190,25 @@ class _CreateClassSessionContent extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFFDBEAFE),
+            color: colorScheme.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFBFDBFE)),
+            border: Border.all(color: colorScheme.primary.withValues(alpha: 0.3)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 "Total Students",
-                style: TextStyle(
-                  fontSize: 14,
+                style: textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF1E3A8A),
+                  color: colorScheme.primary,
                 ),
               ),
               Text(
                 "$totalStudents",
-                style: const TextStyle(
-                  fontSize: 24,
+                style: textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF2563EB),
+                  color: colorScheme.primary,
                 ),
               ),
             ],
@@ -1095,8 +1218,13 @@ class _CreateClassSessionContent extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomNavigation(BuildContext context, CreateClassState state) {
+  Widget _buildBottomNavigation(
+    BuildContext context,
+    CreateClassState state,
+    ThemeData theme,
+  ) {
     final cubit = context.read<CreateClassCubit>();
+    final colorScheme = theme.colorScheme;
     final canProceed = state.currentStep == 1
         ? state.courseId.isNotEmpty && state.topic.isNotEmpty
         : state.currentStep == 2
@@ -1108,8 +1236,10 @@ class _CreateClassSessionContent extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey.shade200)),
+        color: colorScheme.surface,
+        border: Border(
+          top: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
+        ),
       ),
       child: Row(
         children: [
@@ -1120,12 +1250,12 @@ class _CreateClassSessionContent extends StatelessWidget {
                     ? null
                     : () => cubit.previousStep(),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black,
+                  backgroundColor: colorScheme.surface,
+                  foregroundColor: colorScheme.onSurface,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: Colors.grey.shade200),
+                    side: BorderSide(color: colorScheme.outline),
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
@@ -1147,8 +1277,8 @@ class _CreateClassSessionContent extends StatelessWidget {
                       }
                     },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2563EB),
-                foregroundColor: Colors.white,
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
                 elevation: 2,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1156,19 +1286,25 @@ class _CreateClassSessionContent extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
               child: state.status == CreateClassStatus.loading
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation(Colors.white),
+                        valueColor: AlwaysStoppedAnimation(
+                          colorScheme.onPrimary,
+                        ),
                       ),
                     )
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         if (state.currentStep == 3)
-                          const Icon(Icons.check_circle, size: 16),
+                          Icon(
+                            Icons.check_circle,
+                            size: 16,
+                            color: colorScheme.onPrimary,
+                          ),
                         if (state.currentStep == 3) const SizedBox(width: 8),
                         Text(
                           state.currentStep < 3 ? "Next" : "Create Session",
@@ -1176,7 +1312,11 @@ class _CreateClassSessionContent extends StatelessWidget {
                         ),
                         if (state.currentStep < 3) ...[
                           const SizedBox(width: 8),
-                          const Icon(Icons.chevron_right, size: 16),
+                          Icon(
+                            Icons.chevron_right,
+                            size: 16,
+                            color: colorScheme.onPrimary,
+                          ),
                         ],
                       ],
                     ),
