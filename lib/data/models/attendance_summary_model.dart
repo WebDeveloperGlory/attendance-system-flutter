@@ -8,14 +8,23 @@ class AttendanceSummaryModel extends AttendanceSummaryEntity {
   });
 
   factory AttendanceSummaryModel.fromJson(Map<String, dynamic> json) {
+    final coursesJson = json['courses'] as List<dynamic>?;
+
+    // Create typed list explicitly
+    final courses = <CourseAttendanceEntity>[];
+
+    if (coursesJson != null) {
+      for (final courseJson in coursesJson) {
+        // Explicitly create CourseAttendanceModel
+        final course = CourseAttendanceModel.fromJson(courseJson);
+        courses.add(course);
+      }
+    }
+
     return AttendanceSummaryModel(
       totalSessions: (json['totalSessions'] ?? 0).toInt(),
       averageAttendance: (json['averageAttendance'] ?? 0).toDouble(),
-      courses:
-          (json['courses'] as List<dynamic>?)
-              ?.map((course) => CourseAttendanceModel.fromJson(course))
-              .toList() ??
-          const [],
+      courses: courses,
     );
   }
 }
@@ -29,15 +38,22 @@ class CourseAttendanceModel extends CourseAttendanceEntity {
   });
 
   factory CourseAttendanceModel.fromJson(Map<String, dynamic> json) {
+    final sessionsJson = json['sessions'] as List<dynamic>?;
+
+    final sessions = <ClassSessionEntity>[];
+
+    if (sessionsJson != null) {
+      for (final sessionJson in sessionsJson) {
+        final session = ClassSessionModel.fromJson(sessionJson);
+        sessions.add(session);
+      }
+    }
+
     return CourseAttendanceModel(
       courseId: json['courseId']?.toString() ?? '',
       courseName: json['courseName']?.toString() ?? '',
       courseCode: json['courseCode']?.toString() ?? '',
-      sessions:
-          (json['sessions'] as List<dynamic>?)
-              ?.map((session) => ClassSessionModel.fromJson(session))
-              .toList() ??
-          const [],
+      sessions: sessions,
     );
   }
 }

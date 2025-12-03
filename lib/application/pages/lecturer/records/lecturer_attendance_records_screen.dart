@@ -124,11 +124,11 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
     }
 
     if (state is AttendanceRecordsLoaded) {
-      return _buildRecordsList(context, state.summary);
+      return _buildRecordsList(context, state);
     }
 
     if (state is AttendanceRecordsClassDetailsLoaded) {
-      return _buildClassDetails(context, state);
+      return _buildClassDetailsContent(context, state);
     }
 
     return const Center(child: CircularProgressIndicator());
@@ -136,36 +136,11 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
 
   Widget _buildRecordsList(
     BuildContext context,
-    AttendanceSummaryEntity summary,
+    AttendanceRecordsLoaded state,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-
-    CourseAttendanceEntity? _findCourseForSession(
-      AttendanceSummaryEntity summary,
-      ClassSessionEntity session,
-    ) {
-      for (final course in summary.courses) {
-        // Check if any session in this course matches
-        for (final courseSession in course.sessions) {
-          if (courseSession.id == session.id) {
-            return course;
-          }
-        }
-      }
-      return null;
-    }
-
-    // Flatten all sessions from all courses
-    final allSessions = <ClassSessionEntity>[];
-    for (final course in summary.courses) {
-      for (final session in course.sessions) {
-        allSessions.add(session);
-      }
-    }
-
-    // Sort by date (newest first)
-    allSessions.sort((a, b) => b.date.compareTo(a.date));
+    final cubit = context.read<AttendanceRecordsCubit>();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -193,7 +168,7 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        summary.totalSessions.toString(),
+                        state.summary.totalSessions.toString(),
                         style: textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: colorScheme.primary,
@@ -229,7 +204,7 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "${summary.averageAttendance.round()}%",
+                        "${state.summary.averageAttendance.round()}%",
                         style: textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: Colors.green,
@@ -251,16 +226,23 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
           const SizedBox(height: 20),
 
           // Course Filter
-          _buildCourseFilter(context, summary.courses),
+          _buildCourseFilter(
+            context,
+            state.summary.courses,
+            cubit.selectedCourseId,
+          ),
 
           const SizedBox(height: 20),
 
           // Records List
-          allSessions.isEmpty
+          state.filteredSessions.isEmpty
               ? _buildEmptyState(context)
               : Column(
-                  children: allSessions.map((session) {
-                    final course = _findCourseForSession(summary, session);
+                  children: state.filteredSessions.map((session) {
+                    final course = _findCourseForSession(
+                      state.summary,
+                      session,
+                    );
                     return _buildRecordCard(context, session, course);
                   }).toList(),
                 ),
@@ -272,39 +254,69 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
   Widget _buildCourseFilter(
     BuildContext context,
     List<CourseAttendanceEntity> courses,
+    String? selectedCourseId,
   ) {
-    // final colorScheme = Theme.of(context).colorScheme;
-    // final textTheme = Theme.of(context).textTheme;
+    final cubit = context.read<AttendanceRecordsCubit>();
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          _buildFilterButton(
-            context,
-            label: "All Courses",
-            isActive: true,
-            onTap: () {
-              // TODO: Implement filter
-            },
-          ),
-          const SizedBox(width: 8),
-          ...courses.map((course) {
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: _buildFilterButton(
-                context,
-                label: course.courseCode,
-                isActive: false,
-                onTap: () {
-                  // TODO: Implement filter
-                },
+    // Use Builder pattern to avoid closure issues
+    return Builder(
+      builder: (context) {
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              // All Courses button
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: _buildFilterButton(
+                  context,
+                  label: "All Courses",
+                  isActive: selectedCourseId == null,
+                  onTap: () {
+                    cubit.filterByCourse(null);
+                  },
+                ),
               ),
-            );
-          }),
-        ],
-      ),
+
+              // Course buttons - use a for loop instead of map
+              for (int i = 0; i < courses.length; i++)
+                Padding(
+                  padding: EdgeInsets.only(
+                    right: i < courses.length - 1 ? 8 : 0,
+                  ),
+                  child: Builder(
+                    builder: (context) {
+                      final course = courses[i];
+                      return _buildFilterButton(
+                        context,
+                        label: course.courseCode,
+                        isActive: selectedCourseId == course.courseId,
+                        onTap: () {
+                          cubit.filterByCourse(course.courseId);
+                        },
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
+  }
+
+  CourseAttendanceEntity? _findCourseForSession(
+    AttendanceSummaryEntity summary,
+    ClassSessionEntity session,
+  ) {
+    for (final course in summary.courses) {
+      // Check if this course contains the session
+      final hasSession = course.sessions.any((s) => s.id == session.id);
+      if (hasSession) {
+        return course;
+      }
+    }
+    return null;
   }
 
   Widget _buildRecordCard(
@@ -599,64 +611,61 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
     );
   }
 
-  Widget _buildClassDetails(
+  Widget _buildClassDetailsContent(
     BuildContext context,
     AttendanceRecordsClassDetailsLoaded state,
   ) {
     return Column(
       children: [
-        // Back Button
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            border: Border(
-              bottom: BorderSide(
-                color: Theme.of(
-                  context,
-                ).colorScheme.outline.withValues(alpha: 0.3),
-              ),
-            ),
-          ),
-          child: Row(
-            children: [
-              IconButton(
-                onPressed: () {
-                  context.read<AttendanceRecordsCubit>().clearClassDetails();
-                },
-                icon: Icon(
-                  Icons.arrow_back,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Class Attendance Details",
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    Text(
-                      _formatDate(state.classAttendance.classSession.date),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+        // Back button and title
+        _buildClassDetailsHeader(context),
+        // Content
         Expanded(
           child: _buildClassAttendanceDetails(context, state.classAttendance),
         ),
       ],
+    );
+  }
+
+  Widget _buildClassDetailsHeader(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: () {
+              context.read<AttendanceRecordsCubit>().clearClassDetails();
+            },
+            icon: Icon(
+              Icons.arrow_back,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Class Attendance Details",
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1011,7 +1020,9 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
+    // DON'T use a static key - generate a unique one
     return Container(
+      // REMOVE any GlobalKey here if you have one
       decoration: BoxDecoration(
         color: isActive
             ? colorScheme.primary
