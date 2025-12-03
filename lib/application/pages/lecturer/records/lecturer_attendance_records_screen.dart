@@ -128,7 +128,7 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
     }
 
     if (state is AttendanceRecordsClassDetailsLoaded) {
-      return _buildClassDetailsContent(context, state);
+      return _buildClassDetailsScreen(context, state);
     }
 
     return const Center(child: CircularProgressIndicator());
@@ -611,14 +611,14 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
     );
   }
 
-  Widget _buildClassDetailsContent(
+  Widget _buildClassDetailsScreen(
     BuildContext context,
     AttendanceRecordsClassDetailsLoaded state,
   ) {
     return Column(
       children: [
-        // Back button and title
-        _buildClassDetailsHeader(context),
+        // Single header for class details
+        _buildClassDetailsHeader(context, state.classAttendance.classSession),
         // Content
         Expanded(
           child: _buildClassAttendanceDetails(context, state.classAttendance),
@@ -627,7 +627,10 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
     );
   }
 
-  Widget _buildClassDetailsHeader(BuildContext context) {
+  Widget _buildClassDetailsHeader(
+    BuildContext context,
+    ClassSessionDetailEntity classSession,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -659,6 +662,13 @@ class _LecturerAttendanceRecordsContent extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _formatDate(classSession.date),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
