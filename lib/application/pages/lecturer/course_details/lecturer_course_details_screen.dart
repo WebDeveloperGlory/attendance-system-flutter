@@ -28,41 +28,43 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return BlocBuilder<LecturerCourseDetailsCubit, LecturerCourseDetailsState>(
       builder: (context, state) {
         if (state.status == LecturerCourseDetailsStatus.loading) {
-          return _buildLoadingState();
+          return _buildLoadingState(theme);
         }
 
         if (state.status == LecturerCourseDetailsStatus.error &&
             state.courseDetails == null) {
-          return _buildErrorState(context);
+          return _buildErrorState(context, theme);
         }
 
         if (state.courseDetails == null) {
-          return _buildEmptyState();
+          return _buildEmptyState(theme);
         }
 
-        return _buildContent(context, state);
+        return _buildContent(context, state, theme);
       },
     );
   }
 
-  Widget _buildLoadingState() {
+  Widget _buildLoadingState(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surface,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const CircularProgressIndicator(),
+            CircularProgressIndicator(color: colorScheme.primary),
             const SizedBox(height: 16),
             Text(
               'Loading course details...',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[600],
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -71,27 +73,29 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
     );
   }
 
-  Widget _buildErrorState(BuildContext context) {
+  Widget _buildErrorState(BuildContext context, ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surface,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.red[400]),
+            Icon(Icons.error_outline, size: 64, color: colorScheme.error),
             const SizedBox(height: 16),
             Text(
               'Failed to load course details',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[800],
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Please check your connection and try again',
-              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -99,8 +103,8 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
               onPressed: () =>
                   context.read<LecturerCourseDetailsCubit>().refresh(),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2563EB),
-                foregroundColor: Colors.white,
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -117,27 +121,29 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surface,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.menu_book, size: 64, color: Colors.grey[400]),
+            Icon(Icons.menu_book, size: 64, color: colorScheme.onSurfaceVariant),
             const SizedBox(height: 16),
             Text(
               'Course not found',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[800],
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'The requested course could not be found',
-              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -146,17 +152,18 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
     );
   }
 
-  Widget _buildContent(BuildContext context, LecturerCourseDetailsState state) {
+  Widget _buildContent(BuildContext context, LecturerCourseDetailsState state, ThemeData theme) {
     final cubit = context.read<LecturerCourseDetailsCubit>();
     final courseDetails = state.courseDetails!;
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: Column(
           children: [
             // Header
-            _buildHeader(context, courseDetails, cubit, state.showMenu),
+            _buildHeader(context, courseDetails, cubit, state.showMenu, colorScheme),
 
             // Content
             Expanded(
@@ -165,33 +172,36 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
                 child: Column(
                   children: [
                     // Course Info Card
-                    _buildCourseInfoCard(courseDetails),
+                    _buildCourseInfoCard(courseDetails, colorScheme),
 
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
                     // Stats
                     _buildStatsCards(
                       state.enrolledStudentsCount,
                       state.averageAttendancePercentage,
+                      colorScheme,
                     ),
 
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
                     // Upcoming Sessions
                     _buildUpcomingSessionsSection(
                       context,
                       courseDetails.upcomingClasses,
+                      colorScheme,
                     ),
 
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
                     // Recent Attendance
                     _buildRecentAttendanceSection(
                       context,
                       courseDetails.recentAttendance,
+                      colorScheme,
                     ),
 
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
                     // Enrolled Students
                     _buildEnrolledStudentsSection(
@@ -199,6 +209,7 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
                       state.filteredStudents,
                       state.searchQuery,
                       state.enrolledStudentsCount,
+                      colorScheme,
                     ),
                   ],
                 ),
@@ -215,11 +226,12 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
     LecturerCourseDetailsEntity courseDetails,
     LecturerCourseDetailsCubit cubit,
     bool showMenu,
+    ColorScheme colorScheme,
   ) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+        color: colorScheme.surface,
+        border: Border(bottom: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3))),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -231,14 +243,14 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                color: Colors.white,
+                color: colorScheme.surface,
               ),
               child: IconButton(
                 onPressed: () => context.pop(),
-                icon: const Icon(
+                icon: Icon(
                   Icons.arrow_back,
                   size: 20,
-                  color: Colors.black,
+                  color: colorScheme.onSurface,
                 ),
               ),
             ),
@@ -250,17 +262,17 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
                 children: [
                   Text(
                     courseDetails.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                      color: Colors.black,
+                      color: colorScheme.onSurface,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   Text(
                     courseDetails.code,
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -271,14 +283,14 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                color: Colors.white,
+                color: colorScheme.surface,
               ),
               child: IconButton(
                 onPressed: () => cubit.toggleMenu(!showMenu),
-                icon: const Icon(
+                icon: Icon(
                   Icons.more_vert,
                   size: 20,
-                  color: Colors.black,
+                  color: colorScheme.onSurface,
                 ),
               ),
             ),
@@ -288,67 +300,70 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
     );
   }
 
-  Widget _buildCourseInfoCard(LecturerCourseDetailsEntity courseDetails) {
+  Widget _buildCourseInfoCard(LecturerCourseDetailsEntity courseDetails, ColorScheme colorScheme) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
+        color: colorScheme.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFBFDBFE)),
+        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             "Course Information",
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 14,
-              color: Color(0xFF1E3A8A),
+              color: colorScheme.primary,
             ),
           ),
           const SizedBox(height: 16),
-          _buildInfoRow(Icons.school, "Level:", courseDetails.level),
+          _buildInfoRow(Icons.school, "Level:", courseDetails.level, colorScheme),
           const SizedBox(height: 8),
           _buildInfoRow(
             Icons.business,
             "Department:",
             courseDetails.department,
+            colorScheme,
           ),
           const SizedBox(height: 8),
           _buildInfoRow(
             Icons.calendar_today,
             "Schedule:",
             courseDetails.schedule.dayOfWeek,
+            colorScheme,
           ),
           const SizedBox(height: 8),
           _buildInfoRow(
             Icons.access_time,
             "Time:",
             '${courseDetails.schedule.startTime} - ${courseDetails.schedule.endTime}',
+            colorScheme,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
+  Widget _buildInfoRow(IconData icon, String label, String value, ColorScheme colorScheme) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: const Color(0xFF2563EB)),
+        Icon(icon, size: 16, color: colorScheme.primary),
         const SizedBox(width: 8),
         Text(
           label,
-          style: const TextStyle(fontSize: 14, color: Color(0xFF4B5563)),
+          style: TextStyle(fontSize: 14, color: colorScheme.onSurfaceVariant),
         ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF111827),
+              color: colorScheme.onSurface,
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -357,15 +372,16 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsCards(int studentCount, double avgAttendance) {
+  Widget _buildStatsCards(int studentCount, double avgAttendance, ColorScheme colorScheme) {
     return Row(
       children: [
         Expanded(
           child: _buildStatCard(
             studentCount.toString(),
             "Enrolled Students",
-            const Color(0xFF2563EB),
+            colorScheme.primary,
             Icons.people,
+            colorScheme,
           ),
         ),
         const SizedBox(width: 12),
@@ -373,8 +389,9 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
           child: _buildStatCard(
             "${avgAttendance.round()}%",
             "Avg. Attendance",
-            const Color(0xFF10B981),
+            Colors.green,
             Icons.trending_up,
+            colorScheme,
           ),
         ),
       ],
@@ -386,6 +403,7 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
     String label,
     Color color,
     IconData icon,
+    ColorScheme colorScheme,
   ) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -436,28 +454,29 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
   Widget _buildUpcomingSessionsSection(
     BuildContext context,
     List<UpcomingClassEntity> upcomingClasses,
+    ColorScheme colorScheme,
   ) {
     return Column(
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               "Upcoming Sessions",
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.black,
+                color: colorScheme.onSurface,
               ),
             ),
             ElevatedButton.icon(
               onPressed: () => context.push('/lecturer/create-class'),
-              icon: const Icon(Icons.add, size: 16),
-              label: const Text("New"),
+              icon: Icon(Icons.add, size: 16, color: colorScheme.onSurface),
+              label: Text("New", style: TextStyle(color: colorScheme.onSurface)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black,
-                side: BorderSide(color: Colors.grey.shade300),
+                backgroundColor: colorScheme.surface,
+                foregroundColor: colorScheme.onSurface,
+                side: BorderSide(color: colorScheme.outline),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -470,11 +489,11 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        if (upcomingClasses.isEmpty) _buildEmptyUpcomingSessions(),
+        if (upcomingClasses.isEmpty) _buildEmptyUpcomingSessions(colorScheme),
         if (upcomingClasses.isNotEmpty)
           Column(
             children: upcomingClasses.map((session) {
-              return _buildUpcomingSessionCard(context, session);
+              return _buildUpcomingSessionCard(context, session, colorScheme);
             }).toList(),
           ),
       ],
@@ -484,13 +503,14 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
   Widget _buildUpcomingSessionCard(
     BuildContext context,
     UpcomingClassEntity session,
+    ColorScheme colorScheme,
   ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
       ),
       child: Material(
         color: Colors.transparent,
@@ -510,19 +530,19 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
                     Expanded(
                       child: Text(
                         session.topic,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black,
+                          color: colorScheme.onSurface,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const Icon(
+                    Icon(
                       Icons.chevron_right,
                       size: 20,
-                      color: Colors.grey,
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ],
                 ),
@@ -532,19 +552,19 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
                     Icon(
                       Icons.calendar_today,
                       size: 14,
-                      color: Colors.grey[600],
+                      color: colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       session.formattedDate,
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
                     ),
                     const SizedBox(width: 12),
-                    Icon(Icons.access_time, size: 14, color: Colors.grey[600]),
+                    Icon(Icons.access_time, size: 14, color: colorScheme.onSurfaceVariant),
                     const SizedBox(width: 4),
                     Text(
                       session.formattedTime,
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -556,30 +576,30 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyUpcomingSessions() {
+  Widget _buildEmptyUpcomingSessions(ColorScheme colorScheme) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
-          Icon(Icons.calendar_today, size: 48, color: Colors.grey[400]),
+          Icon(Icons.calendar_today, size: 48, color: colorScheme.onSurfaceVariant),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             "No Upcoming Sessions",
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Colors.black,
+              color: colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             "Create a new class session to get started",
-            style: TextStyle(fontSize: 12, color: Colors.grey),
+            style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
         ],
@@ -590,31 +610,32 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
   Widget _buildRecentAttendanceSection(
     BuildContext context,
     List<RecentAttendanceEntity> recentAttendance,
+    ColorScheme colorScheme,
   ) {
     return Column(
       children: [
         const SizedBox(height: 16),
-        const Text(
+        Text(
           "Recent Attendance",
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 12),
-        if (recentAttendance.isEmpty) _buildEmptyAttendanceHistory(),
+        if (recentAttendance.isEmpty) _buildEmptyAttendanceHistory(colorScheme),
         if (recentAttendance.isNotEmpty)
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: colorScheme.surface,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
             ),
             child: Column(
               children: recentAttendance.take(3).map((attendance) {
-                return _buildAttendanceItem(context, attendance);
+                return _buildAttendanceItem(context, attendance, colorScheme);
               }).toList(),
             ),
           ),
@@ -625,6 +646,7 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
   Widget _buildAttendanceItem(
     BuildContext context,
     RecentAttendanceEntity attendance,
+    ColorScheme colorScheme,
   ) {
     final attendanceRate = attendance.attendanceRate;
     final attendanceColor = _getAttendanceColor(attendanceRate);
@@ -634,9 +656,9 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
       ),
       child: Material(
         color: Colors.transparent,
@@ -662,20 +684,20 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
                         attendance.topic.isNotEmpty
                             ? attendance.topic
                             : "Class Session",
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black,
+                          color: colorScheme.onSurface,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     if (hasClassId)
-                      const Icon(
+                      Icon(
                         Icons.chevron_right,
                         size: 16,
-                        color: Colors.grey,
+                        color: colorScheme.onSurfaceVariant,
                       ),
                   ],
                 ),
@@ -687,7 +709,7 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
                   children: [
                     Text(
                       _formatDate(attendance.date),
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
                     ),
                     Text(
                       "${attendanceRate.round()}%",
@@ -705,7 +727,7 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
                 Container(
                   height: 6,
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(3),
                   ),
                   child: FractionallySizedBox(
@@ -716,7 +738,7 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
                         gradient: LinearGradient(
                           colors: [
                             attendanceColor,
-                            attendanceColor.withOpacity(0.8),
+                            attendanceColor.withValues(alpha: 0.8),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(3),
@@ -734,14 +756,14 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
                         Icon(
                           Icons.check_circle,
                           size: 12,
-                          color: Colors.grey[600],
+                          color: colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           "${attendance.present} present",
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey[600],
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -749,13 +771,13 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
                     const SizedBox(width: 12),
                     Row(
                       children: [
-                        Icon(Icons.cancel, size: 12, color: Colors.grey[600]),
+                        Icon(Icons.cancel, size: 12, color: colorScheme.onSurfaceVariant),
                         const SizedBox(width: 4),
                         Text(
                           "${attendance.absent} absent",
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey[600],
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -766,7 +788,7 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
                         "View Details",
                         style: TextStyle(
                           fontSize: 12,
-                          color: const Color(0xFF2563EB),
+                          color: colorScheme.primary,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -781,9 +803,9 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
   }
 
   Color _getAttendanceColor(double rate) {
-    if (rate >= 90) return const Color(0xFF10B981);
-    if (rate >= 80) return const Color(0xFFF59E0B);
-    return const Color(0xFFEF4444);
+    if (rate >= 90) return Colors.green;
+    if (rate >= 80) return Colors.orange;
+    return Colors.red;
   }
 
   String _formatDate(DateTime date) {
@@ -811,30 +833,30 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
     return months[month - 1];
   }
 
-  Widget _buildEmptyAttendanceHistory() {
+  Widget _buildEmptyAttendanceHistory(ColorScheme colorScheme) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
-          Icon(Icons.bar_chart, size: 48, color: Colors.grey[400]),
+          Icon(Icons.bar_chart, size: 48, color: colorScheme.onSurfaceVariant),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             "No Attendance Records",
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Colors.black,
+              color: colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             "Attendance records will appear here after classes",
-            style: TextStyle(fontSize: 12, color: Colors.grey),
+            style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
         ],
@@ -847,16 +869,17 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
     List<StudentEntity> filteredStudents,
     String searchQuery,
     int totalStudents,
+    ColorScheme colorScheme,
   ) {
     return Column(
       children: [
         const SizedBox(height: 16),
-        const Text(
+        Text(
           "Enrolled Students",
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 12),
@@ -865,26 +888,28 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
           height: 48,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: colorScheme.outline.withValues(alpha: 0.5)),
           ),
           child: TextField(
-            decoration: const InputDecoration(
+            style: TextStyle(color: colorScheme.onSurface),
+            decoration: InputDecoration(
               hintText: "Search students...",
-              hintStyle: TextStyle(color: Colors.grey),
+              hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 16),
-              prefixIcon: Icon(Icons.search, color: Colors.grey),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+              prefixIcon: Icon(Icons.search, color: colorScheme.onSurfaceVariant),
+              fillColor: colorScheme.surface,
             ),
             onChanged: cubit.updateSearchQuery,
           ),
         ),
         const SizedBox(height: 16),
         // Student List
-        if (filteredStudents.isEmpty) _buildEmptyStudentsList(),
+        if (filteredStudents.isEmpty) _buildEmptyStudentsList(colorScheme),
         if (filteredStudents.isNotEmpty)
           Column(
             children: filteredStudents.map((student) {
-              return _buildStudentCard(student);
+              return _buildStudentCard(student, colorScheme);
             }).toList(),
           ),
         // Student Count
@@ -894,18 +919,18 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
             margin: const EdgeInsets.only(top: 16),
             padding: const EdgeInsets.only(top: 12),
             decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: Colors.grey.shade200)),
+              border: Border(top: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3))),
             ),
             child: Text(
               "Showing ${filteredStudents.length} of $totalStudents students",
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
+              style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
             ),
           ),
       ],
     );
   }
 
-  Widget _buildStudentCard(StudentEntity student) {
+  Widget _buildStudentCard(StudentEntity student, ColorScheme colorScheme) {
     final initials = student.name
         .split(' ')
         .map((name) => name.isNotEmpty ? name[0] : '')
@@ -916,9 +941,9 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -926,11 +951,11 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
           Container(
             width: 40,
             height: 40,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+                colors: [colorScheme.primary, colorScheme.primaryContainer],
               ),
-              borderRadius: BorderRadius.all(Radius.circular(8)),
+              borderRadius: const BorderRadius.all(Radius.circular(8)),
             ),
             child: Center(
               child: Text(
@@ -951,15 +976,15 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
               children: [
                 Text(
                   student.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black,
+                    color: colorScheme.onSurface,
                   ),
                 ),
                 Text(
                   student.matricNumber ?? 'N/A',
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
                 ),
               ],
             ),
@@ -969,30 +994,30 @@ class _LecturerCourseDetailsContent extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyStudentsList() {
+  Widget _buildEmptyStudentsList(ColorScheme colorScheme) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
-          Icon(Icons.people, size: 48, color: Colors.grey[400]),
+          Icon(Icons.people, size: 48, color: colorScheme.onSurfaceVariant),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             "No Students Enrolled",
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Colors.black,
+              color: colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             "Students enrolled in this course will appear here",
-            style: TextStyle(fontSize: 12, color: Colors.grey),
+            style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
         ],
