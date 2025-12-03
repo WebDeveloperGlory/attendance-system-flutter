@@ -15,19 +15,24 @@ import 'package:smart_attendance_system/application/pages/auth/admin_login_scree
 import 'package:smart_attendance_system/application/pages/auth/cubit/auth_state_cubit.dart';
 import 'package:smart_attendance_system/application/pages/auth/lecturer_login_screen.dart';
 import 'package:smart_attendance_system/application/pages/auth/user_type_selection_screen.dart';
+import 'package:smart_attendance_system/application/pages/lecturer/class_session_details/class_session_details_screen.dart';
 import 'package:smart_attendance_system/application/pages/lecturer/create_class/create_class_session_screen.dart';
 import 'package:smart_attendance_system/application/pages/lecturer/dashboard/lecturer_dashboard_screen.dart';
 import 'package:smart_attendance_system/application/pages/lecturer/lecturer_shell.dart';
 import 'package:smart_attendance_system/application/pages/lecturer/records/lecturer_attendance_records_screen.dart';
 
-final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
-final GlobalKey<NavigatorState> _adminShellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'adminShell');
-final GlobalKey<NavigatorState> _lecturerShellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'lecturerShell');
+final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(
+  debugLabel: 'root',
+);
+final GlobalKey<NavigatorState> _adminShellNavigatorKey =
+    GlobalKey<NavigatorState>(debugLabel: 'adminShell');
+final GlobalKey<NavigatorState> _lecturerShellNavigatorKey =
+    GlobalKey<NavigatorState>(debugLabel: 'lecturerShell');
 
 GoRouter routes(BuildContext context) {
   final authStateCubit = BlocProvider.of<AuthStateCubit>(context);
   print('🚀 Router using AuthStateCubit instance: ${authStateCubit.hashCode}');
-  
+
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/',
@@ -35,23 +40,20 @@ GoRouter routes(BuildContext context) {
     refreshListenable: GoRouterRefreshStream(authStateCubit.stream),
     redirect: (context, state) => _handleRedirect(context, state),
     routes: [
-      GoRoute(
-        path: '/',
-        redirect: (context, state) => '/home',
-      ),
+      GoRoute(path: '/', redirect: (context, state) => '/home'),
       GoRoute(
         path: '/home',
         builder: (context, state) => const UserTypeSelectionScreen(),
       ),
       GoRoute(
         path: '/admin-login',
-        builder: (context, state) => const AdminLoginScreenWrapperProvider(), 
+        builder: (context, state) => const AdminLoginScreenWrapperProvider(),
       ),
       GoRoute(
         path: '/lecturer-login',
         builder: (context, state) => const LecturerLoginScreenWrapperProvider(),
       ),
-      
+
       // Admin Shell Routes (Protected)
       ShellRoute(
         navigatorKey: _adminShellNavigatorKey,
@@ -75,7 +77,7 @@ GoRouter routes(BuildContext context) {
           GoRoute(
             path: '/admin/lecturers',
             builder: (context, state) => const AdminLecturerManagement(),
-          ),        
+          ),
           GoRoute(
             path: '/admin/faculty',
             builder: (context, state) => const AdminFacultyManagementScreen(),
@@ -88,7 +90,7 @@ GoRouter routes(BuildContext context) {
           ),
         ],
       ),
-      
+
       // Lecturer Shell Routes (Protected)
       ShellRoute(
         navigatorKey: _lecturerShellNavigatorKey,
@@ -104,7 +106,16 @@ GoRouter routes(BuildContext context) {
           ),
           GoRoute(
             path: '/lecturer/records',
-            builder: (context, state) => const LecturerAttendanceRecordsScreen(),
+            builder: (context, state) =>
+                const LecturerAttendanceRecordsScreen(),
+          ),
+          // In your routes file, add this route:
+          GoRoute(
+            path: '/lecturer/class/:classId',
+            builder: (context, state) {
+              final classId = state.pathParameters['classId']!;
+              return ClassSessionDetailsScreen(classId: classId);
+            },
           ),
         ],
       ),
@@ -143,30 +154,31 @@ GoRouter routes(BuildContext context) {
 String? _handleRedirect(BuildContext context, GoRouterState state) {
   final authState = context.read<AuthStateCubit>().state;
   final location = state.uri.toString();
-  
+
   print('🔄 Router redirect check: $location, Auth: ${authState.runtimeType}');
-  
+
   // If auth is still loading, don't redirect yet
   if (authState is AuthStateLoading) {
     print('⏳ Auth loading, staying on current route');
     return null;
   }
-  
+
   final isAuthenticated = authState is AuthStateAuthenticated;
   final userRole = isAuthenticated ? (authState).user.role.toLowerCase() : null;
-  
+
   // Public routes - accessible to everyone
   final publicRoutes = ['/home', '/admin-login', '/lecturer-login'];
   if (publicRoutes.contains(location)) {
     // If authenticated user tries to access login pages, redirect to their dashboard
-    if (isAuthenticated && (location == '/admin-login' || location == '/lecturer-login')) {
+    if (isAuthenticated &&
+        (location == '/admin-login' || location == '/lecturer-login')) {
       final dashboard = _getDashboardRoute(userRole!);
       print('✅ Authenticated user on login page, redirecting to: $dashboard');
       return dashboard;
     }
     return null;
   }
-  
+
   // Protected routes - require authentication
   if (location.startsWith('/admin/')) {
     if (!isAuthenticated) {
@@ -174,33 +186,37 @@ String? _handleRedirect(BuildContext context, GoRouterState state) {
       return '/admin-login';
     }
     if (userRole != 'admin') {
-      print('❌ Wrong role for admin route, redirecting to: ${_getDashboardRoute(userRole!)}');
+      print(
+        '❌ Wrong role for admin route, redirecting to: ${_getDashboardRoute(userRole!)}',
+      );
       return _getDashboardRoute(userRole);
     }
     print('✅ Admin access granted');
     return null;
   }
-  
+
   if (location.startsWith('/lecturer/')) {
     if (!isAuthenticated) {
       print('❌ Not authenticated, redirecting to lecturer login');
       return '/lecturer-login';
     }
     if (userRole != 'lecturer') {
-      print('❌ Wrong role for lecturer route, redirecting to: ${_getDashboardRoute(userRole!)}');
+      print(
+        '❌ Wrong role for lecturer route, redirecting to: ${_getDashboardRoute(userRole!)}',
+      );
       return _getDashboardRoute(userRole);
     }
     print('✅ Lecturer access granted');
     return null;
   }
-  
+
   // For any other route, if authenticated, redirect to dashboard
   if (isAuthenticated) {
     final dashboard = _getDashboardRoute(userRole!);
     print('✅ Authenticated, redirecting to dashboard: $dashboard');
     return dashboard;
   }
-  
+
   // Default: redirect to home
   print('🏠 Default redirect to home');
   return '/home';

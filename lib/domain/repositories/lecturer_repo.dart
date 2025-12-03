@@ -1,6 +1,6 @@
 
 import 'package:dartz/dartz.dart';
-import 'package:smart_attendance_system/domain/entities/admin_dashboard_entity.dart';
+// import 'package:smart_attendance_system/domain/entities/admin_dashboard_entity.dart';
 import 'package:smart_attendance_system/domain/entities/lecturer_dashboard_entity.dart';
 import 'package:smart_attendance_system/domain/entities/lecturer_entity.dart';
 import 'package:smart_attendance_system/domain/failiures/failures.dart';
