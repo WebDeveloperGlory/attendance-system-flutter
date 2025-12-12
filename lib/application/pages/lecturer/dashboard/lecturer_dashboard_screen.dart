@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:smart_attendance_system/application/pages/auth/cubit/auth_state_cubit.dart';
 import 'package:smart_attendance_system/application/pages/lecturer/dashboard/cubit/lecturer_dashboard_cubit.dart';
 import 'package:smart_attendance_system/domain/entities/lecturer_dashboard_entity.dart';
 import 'package:smart_attendance_system/domain/failiures/failures.dart';
@@ -58,6 +59,7 @@ class LecturerDashboardScreen extends StatelessWidget {
     return Column(
       children: [
         // Header
+        // Header
         Container(
           decoration: BoxDecoration(
             color: colorScheme.surface,
@@ -108,40 +110,24 @@ class LecturerDashboardScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                // Notification Button
-                Stack(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        color: colorScheme.surface,
-                      ),
-                      child: IconButton(
-                        onPressed: () {
-                          // TODO: Implement notifications
-                        },
-                        icon: Icon(
-                          Icons.notifications_outlined,
-                          size: 20,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
+                // Logout Button
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: colorScheme.surface,
+                  ),
+                  child: IconButton(
+                    onPressed: () {
+                      context.read<AuthStateCubit>().logout();
+                    },
+                    icon: Icon(
+                      Icons.logout,
+                      size: 20,
+                      color: colorScheme.onSurface,
                     ),
-                    Positioned(
-                      top: 10,
-                      right: 10,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: colorScheme.primary,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ],
             ),

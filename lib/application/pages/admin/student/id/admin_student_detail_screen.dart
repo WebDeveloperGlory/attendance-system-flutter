@@ -491,6 +491,13 @@ class _AdminStudentDetailContentState extends State<_AdminStudentDetailContent> 
             value: student.email,
             theme: theme,
           ),
+          const SizedBox(height: 8),
+          _buildInfoRow(
+            icon: Icons.school,
+            label: 'Matric Number:',
+            value: student.matricNumber ?? 'No ID',
+            theme: theme,
+          ),
         ],
       ),
     );
